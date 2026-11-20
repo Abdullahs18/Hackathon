@@ -6,7 +6,7 @@ increment; it is not an end-to-end MVP. Work only on `be`.
 | Increment | Backend deliverables | Required verification | State |
 | --- | --- | --- | --- |
 | Foundation and login | FastAPI, configuration, PostgreSQL, Alembic, users/workspaces, seeds, JWT, Admin users, health, auth audit foundation | Contract validity, migrated schemas, login failures, role restrictions, seed repeatability, audit immutability | Implemented; see test/CI results for verification |
-| Contract/voice proof | Agree voice requests/responses; Urdu STT and spoken summary proof; pin mock-server tooling | Real Urdu input and output, provider failure paths, mock contract validation | Pending; gTTS being considered for TTS only, STT/LLM provider undecided |
+| Contract/voice proof | Agree voice requests/responses; Urdu STT and spoken summary proof; pin mock-server tooling | Real Urdu input and output, provider failure paths, mock contract validation | Pending; Gemini free tier selected for AI/transcription, gTTS selected for TTS; live proof outstanding |
 | Complaints and access | Complaint lifecycle, draft create/read/patch/list, helper grants, assignments, access policies | Ownership, active grants, officer assignment and cross-workspace raw API denial | Next |
 | Evidence | Private image/PDF originals, content/type/size validation, SHA-256 metadata, protected retrieval | Invalid file content, unauthorized reads, hash preservation | Pending; retrieval endpoint requires contract extension |
 | Consent foundations | Recipient/purpose/data scopes, view/grant/change/withdraw, current authorization checks | Immediate withdrawal blocks helper/recipient/evidence reads; Admin has no bypass | Implement alongside access-sensitive case operations, not as a late security patch |
@@ -41,4 +41,4 @@ increment; it is not an end-to-end MVP. Work only on `be`.
 Hour 8: exercise real auth/me through the frontend and validate contract responses.
 Hour 20: exercise the ready complaint/analysis/voice endpoints and validate contract responses.
 Unavailable endpoints are explicitly recorded; do not claim a checkpoint passed before the team
-has performed it. Provider credentials and a real Urdu sample are still needed for live voice proof.
+  has performed it. Provider credentials and a real Urdu sample are still needed for live voice proof.

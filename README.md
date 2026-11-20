@@ -33,6 +33,9 @@ entire contract. Case ownership, helper grants, officer case/workspace isolation
 complaints, evidence, routing, AI/voice, LangGraph, mock submission, notifications and audit browsing
 remain to be implemented. See [backend/ROADMAP.md](backend/ROADMAP.md).
 
+The latest foundation review, plan gaps, confirmed provider choices and Windows/Docker manual
+checks are recorded in [backend/PLAN_AUDIT.md](backend/PLAN_AUDIT.md).
+
 ## Run with Docker Compose
 
 Requires Docker with Compose. From repository root:
