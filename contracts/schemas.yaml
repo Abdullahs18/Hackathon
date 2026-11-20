@@ -1,6 +1,17 @@
 # Shared OpenAPI 3.0 schema components. References resolve relative to this file.
 components:
   schemas:
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status, simulated]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        simulated:
+          type: boolean
+          enum: [true]
     Role:
       type: string
       enum: [Citizen, Helper, Officer, Admin]
@@ -933,8 +944,10 @@ components:
         user_id:
           type: string
           minLength: 1
+          maxLength: 100
         password:
           type: string
+          maxLength: 1024
           format: password
           writeOnly: true
     LoginResult:
@@ -952,8 +965,11 @@ components:
         user_id:
           type: string
           minLength: 1
+          maxLength: 100
         password:
           type: string
+          minLength: 12
+          maxLength: 1024
           format: password
           writeOnly: true
         role:

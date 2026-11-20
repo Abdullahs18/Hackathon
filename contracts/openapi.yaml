@@ -4,6 +4,8 @@ info:
   version: 1.0.0
   description: 'Synthetic demo data and simulated services only. Each protected operation accepts a frontend JWT or a scoped external API key bound to an authorized principal. Keys must be unexpired and unrevoked. API key scopes are grouped by resource area. Every request enforces role, resource, workspace and current consent checks as applicable.'
 tags:
+  - name: Health
+    description: Check process liveness and database readiness. No user or case data is returned.
   - name: Authentication
     description: Sign in and view the current account.
   - name: Citizen complaints
@@ -24,6 +26,34 @@ security:
   - BearerAuth: []
   - ApiKeyAuth: []
 paths:
+  /api/v1/health:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: Check process liveness
+      security: []
+      responses:
+        '200':
+          description: Process is running. All reporting services are simulated.
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/Health'
+  /api/v1/health/ready:
+    get:
+      tags: [Health]
+      operationId: getReadiness
+      summary: Check database connectivity and foundation migration readiness
+      security: []
+      responses:
+        '200':
+          description: Database and foundation table are accessible.
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/Health'
+        '503':
+          $ref: '#/components/responses/Error'
   /api/v1/auth/login:
     post:
       tags: [Authentication]
@@ -48,6 +78,16 @@ paths:
           $ref: '#/components/responses/Error'
         '401':
           $ref: '#/components/responses/Error'
+        '429':
+          description: Too many login attempts. Retry-After gives the delay in seconds.
+          headers:
+            Retry-After:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/Error'
   /api/v1/auth/me:
     get:
       tags: [Authentication]
