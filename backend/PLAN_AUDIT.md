@@ -3,6 +3,11 @@
 Reviewed backend commit `065286c3649c9af23072e6dec0cc38770f5bdb01` on branch `be`.
 This is a foundation-stage review, not acceptance of the complete MVP.
 
+**Subsequent increment:** Gemini/gTTS adapters and a local provider-proof CLI are now implemented.
+See VOICE_PROOF.md for configuration and live checks. The assessment below describes the audited
+foundation commit; provider selection is no longer the only work completed, but live Urdu proof
+and case-integrated voice remain unverified/pending.
+
 ## Verified evidence
 
 - All 38 remote files matched the local files byte for byte before this documentation update.

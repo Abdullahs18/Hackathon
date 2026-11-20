@@ -9,3 +9,5 @@ __pycache__/
 backend/storage/
 *.db
 node_modules/
+voice-samples/
+voice-output/

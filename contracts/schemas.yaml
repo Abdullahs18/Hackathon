@@ -1,6 +1,22 @@
 # Shared OpenAPI 3.0 schema components. References resolve relative to this file.
 components:
   schemas:
+    VoiceExtraction:
+      type: object
+      description: Provider-proof preview only. Validate against IncidentInformation and obtain citizen corrections before using it in a complaint. This is not a filed or authorized complaint.
+      additionalProperties: false
+      required: [incident_data, spoken_summary_ur, uncertainties]
+      properties:
+        incident_data:
+          $ref: '#/components/schemas/IncidentInformation'
+        spoken_summary_ur:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        uncertainties:
+          type: array
+          items:
+            type: string
     Health:
       type: object
       additionalProperties: false

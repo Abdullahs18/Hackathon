@@ -7,3 +7,5 @@
 **/.ruff_cache
 backend/storage
 node_modules
+voice-samples
+voice-output

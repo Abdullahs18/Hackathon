@@ -23,6 +23,8 @@ services:
       DASTAK_JWT_SECRET: ${DASTAK_JWT_SECRET:?Set DASTAK_JWT_SECRET in .env}
       DASTAK_DEMO_PASSWORD: ${DASTAK_DEMO_PASSWORD:?Set DASTAK_DEMO_PASSWORD in .env}
       DASTAK_CORS_ORIGINS: ${DASTAK_CORS_ORIGINS:-["http://localhost:5173"]}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DASTAK_GEMINI_MODEL: ${DASTAK_GEMINI_MODEL:-}
     depends_on:
       db:
         condition: service_healthy

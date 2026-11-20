@@ -30,11 +30,16 @@ The canonical contract includes future endpoints. They are not implemented stubs
 until built. API keys are not implemented yet; presenting only `X-API-Key` fails authentication.
 Swagger currently lists the implemented subset at `/docs`; it is not a completion claim for the
 entire contract. Case ownership, helper grants, officer case/workspace isolation, consent,
-complaints, evidence, routing, AI/voice, LangGraph, mock submission, notifications and audit browsing
+complaints, evidence, routing, case-integrated AI/voice, LangGraph, mock submission, notifications and audit browsing
 remain to be implemented. See [backend/ROADMAP.md](backend/ROADMAP.md).
 
 The latest foundation review, plan gaps, confirmed provider choices and Windows/Docker manual
 checks are recorded in [backend/PLAN_AUDIT.md](backend/PLAN_AUDIT.md).
+
+Gemini/gTTS provider adapters and the local Urdu proof command are now available.
+Follow [backend/VOICE_PROOF.md](backend/VOICE_PROOF.md) to configure your key locally, select a
+model available to your free-tier project, and test a synthetic recording. This does not yet
+connect voice to persisted complaints or add voice API endpoints.
 
 ## Run with Docker Compose
 
