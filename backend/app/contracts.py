@@ -35,7 +35,10 @@ def implemented_openapi(routes: list) -> dict:
             operation = deepcopy(spec["paths"][route.path][method.lower()])
             if operation["operationId"] != route.operation_id:
                 raise ValueError(f"Operation drift for {route.path}")
-            paths.setdefault(route.path, {})[method.lower()] = operation
+            path_item = paths.setdefault(route.path, {})
+            if "parameters" in spec["paths"][route.path]:
+                path_item["parameters"] = deepcopy(spec["paths"][route.path]["parameters"])
+            path_item[method.lower()] = operation
     spec["paths"] = paths
     # API keys are a later increment; don't advertise them as usable in runtime Swagger yet.
     spec["security"] = [{"BearerAuth": []}]
@@ -44,6 +47,12 @@ def implemented_openapi(routes: list) -> dict:
         "Synthetic demo only. This document includes implemented routes with JWT authentication. "
         "The repository contracts also define planned routes and future API-key authentication."
     )
-    used_tags = {tag for methods in paths.values() for op in methods.values() for tag in op["tags"]}
+    used_tags = {
+        tag
+        for methods in paths.values()
+        for op in methods.values()
+        if isinstance(op, dict) and "tags" in op
+        for tag in op["tags"]
+    }
     spec["tags"] = [tag for tag in spec["tags"] if tag["name"] in used_tags]
     return resolve(spec, spec)

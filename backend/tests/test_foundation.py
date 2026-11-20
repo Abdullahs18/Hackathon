@@ -69,8 +69,42 @@ def test_audit_mutation_is_rejected_at_database(app):
             with pytest.raises(DatabaseError):
                 session.execute(text(statement))
             session.rollback()
+
+
+def test_postgres_audit_truncate_is_rejected(app):
+    import pytest
+
     if app.state.engine.dialect.name == "postgresql":
         with Session(app.state.engine) as session:
             with pytest.raises(DatabaseError):
                 session.execute(text("TRUNCATE audit_logs"))
             session.rollback()
+
+
+def test_upgrade_preserves_existing_accounts_and_audit_and_readiness(settings):
+    from fastapi.testclient import TestClient
+
+    from app.db import make_engine
+    from app.main import create_app
+    from app.models import AuditLog
+    from tests.conftest import DEMO_PASSWORD
+
+    config = Config(str(BACKEND / "alembic.ini"))
+    command.upgrade(config, "0001")
+    engine = make_engine(settings.database_url)
+    try:
+        with Session(engine) as session, session.begin():
+            seed(session, DEMO_PASSWORD)
+            original_hash = session.get(User, "demo-admin").password_hash
+            record_event(session, "test.before_upgrade", "demo-admin", "Synthetic history")
+        with TestClient(create_app(settings)) as client:
+            assert client.get("/api/v1/health/ready").status_code == 503
+        command.upgrade(config, "head")
+        with Session(engine) as session:
+            assert session.get(User, "demo-admin").password_hash == original_hash
+            assert session.scalar(select(func.count()).select_from(AuditLog)) == 1
+        with TestClient(create_app(settings)) as client:
+            assert client.get("/api/v1/health/ready").status_code == 200
+    finally:
+        engine.dispose()
+        command.downgrade(config, "base")

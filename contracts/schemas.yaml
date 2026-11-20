@@ -1,6 +1,52 @@
 # Shared OpenAPI 3.0 schema components. References resolve relative to this file.
 components:
   schemas:
+    ConsentDataScope:
+      type: string
+      enum:
+      - case_status
+      - incident_data
+      - evidence
+      - incident_data.incident_type
+      - incident_data.incident_date
+      - incident_data.description
+      - incident_data.scam_message
+      - incident_data.platform
+      - incident_data.money_lost
+      - incident_data.amount
+      - incident_data.currency
+      - incident_data.payment_method
+      - incident_data.transaction_reference
+      - incident_data.suspect_details
+      - incident_data.citizen_confirmed_corrections
+      description: case_status shares the case envelope. incident_data shares incident
+        fields except evidence_ids; evidence shares evidence IDs/access. Individual incident_data.field
+        scopes narrow incident sharing. These are data scopes, separate from API-key scopes.
+    ConsentPurpose:
+      type: string
+      enum:
+      - helper_assistance
+      - complaint_submission
+    HelperGrantCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - helper_id
+      properties:
+        helper_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+    OfficerAssignmentCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - officer_id
+      properties:
+        officer_id:
+          type: string
+          minLength: 1
+          maxLength: 100
     VoiceExtraction:
       type: object
       description: Provider-proof preview only. Validate against IncidentInformation and obtain citizen corrections before using it in a complaint. This is not a filed or authorized complaint.
@@ -165,19 +211,24 @@ components:
       properties:
         incident_type:
           type: string
+          maxLength: 200
           nullable: true
         incident_date:
           type: string
+          maxLength: 12000
           description: Exact or approximate date as supplied.
           nullable: true
         description:
           type: string
+          maxLength: 12000
           nullable: true
         scam_message:
           type: string
+          maxLength: 12000
           nullable: true
         platform:
           type: string
+          maxLength: 12000
           nullable: true
         money_lost:
           type: boolean
@@ -187,26 +238,32 @@ components:
           nullable: true
         currency:
           type: string
+          maxLength: 12000
           nullable: true
         payment_method:
           type: string
+          maxLength: 12000
           nullable: true
         transaction_reference:
           type: string
+          maxLength: 12000
           nullable: true
         suspect_details:
           type: array
+          maxItems: 100
           items:
             type: string
           description: 'Reported phone numbers, URLs, accounts or profiles.'
           nullable: true
         evidence_ids:
           type: array
+          maxItems: 100
           items:
             type: string
           nullable: true
         citizen_confirmed_corrections:
           type: array
+          maxItems: 100
           items:
             type: string
           nullable: true
@@ -217,19 +274,24 @@ components:
       properties:
         incident_type:
           type: string
+          maxLength: 200
           nullable: true
         incident_date:
           type: string
+          maxLength: 12000
           description: Exact or approximate date as supplied.
           nullable: true
         description:
           type: string
+          maxLength: 12000
           nullable: true
         scam_message:
           type: string
+          maxLength: 12000
           nullable: true
         platform:
           type: string
+          maxLength: 12000
           nullable: true
         money_lost:
           type: boolean
@@ -239,21 +301,26 @@ components:
           nullable: true
         currency:
           type: string
+          maxLength: 12000
           nullable: true
         payment_method:
           type: string
+          maxLength: 12000
           nullable: true
         transaction_reference:
           type: string
+          maxLength: 12000
           nullable: true
         suspect_details:
           type: array
+          maxItems: 100
           items:
             type: string
           description: 'Reported phone numbers, URLs, accounts or profiles.'
           nullable: true
         evidence_ids:
           type: array
+          maxItems: 100
           items:
             type: string
           nullable: true
@@ -294,6 +361,16 @@ components:
         - current_status
         - incident_data
       properties:
+        version:
+          type: integer
+          minimum: 1
+          description: Draft content version, also returned as a quoted ETag.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
         complaint_id:
           type: string
           minLength: 1
@@ -394,12 +471,14 @@ components:
         recipient:
           type: string
           minLength: 1
+          maxLength: 150
+          description: 'user:<helper_user_id> for helper_assistance; workspace:<workspace_id> for complaint_submission.'
         purpose:
-          type: string
+          $ref: '#/components/schemas/ConsentPurpose'
         data_scopes:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/ConsentDataScope'
           minItems: 1
           uniqueItems: true
     ConsentChange:
@@ -409,12 +488,14 @@ components:
         recipient:
           type: string
           minLength: 1
+          maxLength: 150
+          description: 'user:<helper_user_id> for helper_assistance; workspace:<workspace_id> for complaint_submission.'
         purpose:
-          type: string
+          $ref: '#/components/schemas/ConsentPurpose'
         data_scopes:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/ConsentDataScope'
           minItems: 1
           uniqueItems: true
       minProperties: 1
@@ -445,12 +526,14 @@ components:
         recipient:
           type: string
           minLength: 1
+          maxLength: 150
+          description: 'user:<helper_user_id> for helper_assistance; workspace:<workspace_id> for complaint_submission.'
         purpose:
-          type: string
+          $ref: '#/components/schemas/ConsentPurpose'
         data_scopes:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/ConsentDataScope'
           minItems: 1
           uniqueItems: true
         status:
@@ -830,6 +913,7 @@ components:
         - 'helper:access'
         - 'officer:access'
         - 'admin:users'
+        - 'admin:cases'
         - 'admin:rules'
         - 'admin:audit'
         - 'admin:api_keys'
@@ -1051,19 +1135,24 @@ components:
       properties:
         incident_type:
           type: string
+          maxLength: 200
           nullable: true
         incident_date:
           type: string
+          maxLength: 12000
           description: Exact or approximate date as supplied.
           nullable: true
         description:
           type: string
+          maxLength: 12000
           nullable: true
         scam_message:
           type: string
+          maxLength: 12000
           nullable: true
         platform:
           type: string
+          maxLength: 12000
           nullable: true
         money_lost:
           type: boolean
@@ -1073,26 +1162,32 @@ components:
           nullable: true
         currency:
           type: string
+          maxLength: 12000
           nullable: true
         payment_method:
           type: string
+          maxLength: 12000
           nullable: true
         transaction_reference:
           type: string
+          maxLength: 12000
           nullable: true
         suspect_details:
           type: array
+          maxItems: 100
           items:
             type: string
           description: 'Reported phone numbers, URLs, accounts or profiles.'
           nullable: true
         evidence_ids:
           type: array
+          maxItems: 100
           items:
             type: string
           nullable: true
         citizen_confirmed_corrections:
           type: array
+          maxItems: 100
           items:
             type: string
           nullable: true

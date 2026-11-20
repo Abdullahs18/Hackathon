@@ -1,14 +1,9 @@
-import json
-from copy import deepcopy
-from functools import lru_cache
-from pathlib import Path
 from typing import Literal
 
-import yaml
-from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError as SchemaValidationError
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from app.validation import json_schema, validate_schema
 from app.voice.config import VoiceError
 
 
@@ -29,37 +24,13 @@ class VoiceProofResult(BaseModel):
     extraction: VoiceExtraction
 
 
-@lru_cache
-def _canonical_extraction_schema() -> dict:
-    path = Path(__file__).resolve().parents[3] / "contracts" / "schemas.yaml"
-    schemas = yaml.safe_load(path.read_text(encoding="utf-8"))["components"]["schemas"]
-
-    def convert(value):
-        if isinstance(value, list):
-            return [convert(item) for item in value]
-        if not isinstance(value, dict):
-            return value
-        if "$ref" in value:
-            return convert(schemas[value["$ref"].split("/")[-1]])
-        result = {k: convert(v) for k, v in value.items() if k != "nullable"}
-        if value.get("nullable"):
-            return {"anyOf": [result, {"type": "null"}]}
-        return result
-
-    result = convert(schemas["VoiceExtraction"])
-    Draft202012Validator.check_schema(result)
-    return result
-
-
 def extraction_schema() -> dict:
-    # SDKs may normalize their input; preserve the canonical cached copy.
-    return deepcopy(_canonical_extraction_schema())
+    return json_schema("VoiceExtraction")
 
 
 def validate_extraction(value: dict) -> VoiceExtraction:
     try:
-        json.dumps(value, allow_nan=False)
-        Draft202012Validator(_canonical_extraction_schema()).validate(value)
+        validate_schema("VoiceExtraction", value)
         result = VoiceExtraction.model_validate(value)
         # AI cannot attach evidence or assert citizen-confirmed corrections.
         for name in ["evidence_ids", "citizen_confirmed_corrections"]:

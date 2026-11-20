@@ -8,6 +8,11 @@ See VOICE_PROOF.md for configuration and live checks. The assessment below descr
 foundation commit; provider selection is no longer the only work completed, but live Urdu proof
 and case-integrated voice remain unverified/pending.
 
+**Latest review:** the user has since confirmed the live Urdu transcript, structured extraction and
+playback checks. Drafts, helper grants, consent and officer access gates are now implemented. See
+ITERATION_2_REVIEW.md and CASE_ACCESS.md. The original table below remains the historical foundation
+assessment, not a current completion claim.
+
 ## Verified evidence
 
 - All 38 remote files matched the local files byte for byte before this documentation update.

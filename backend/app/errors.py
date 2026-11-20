@@ -10,6 +10,7 @@ ERROR_NAMES = {
     404: "not_found",
     405: "method_not_allowed",
     409: "conflict",
+    412: "precondition_failed",
     429: "rate_limited",
     503: "unavailable",
 }

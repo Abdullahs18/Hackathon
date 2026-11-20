@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.case_routes import router as case_router
 from app.config import Settings
 from app.contracts import implemented_openapi
 from app.db import make_engine
@@ -38,7 +39,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_methods=["GET", "POST", "PATCH"],
-        allow_headers=["Authorization", "Content-Type", "X-API-Key", "Idempotency-Key"],
+        allow_headers=["Authorization", "Content-Type", "X-API-Key", "Idempotency-Key", "If-Match"],
+        expose_headers=["ETag", "X-Request-ID"],
     )
     install_error_handlers(app)
 
@@ -63,10 +65,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return response
 
     app.include_router(router)
+    app.include_router(case_router)
 
     def openapi():
         if app.openapi_schema is None:
-            app.openapi_schema = implemented_openapi(router.routes)
+            app.openapi_schema = implemented_openapi([*router.routes, *case_router.routes])
         return app.openapi_schema
 
     app.openapi = openapi

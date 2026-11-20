@@ -1,5 +1,9 @@
 from collections.abc import Iterator
+from functools import lru_cache
+from pathlib import Path
 
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from fastapi import Request
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session
@@ -7,6 +11,12 @@ from sqlalchemy.orm import DeclarativeBase, Session
 
 class Base(DeclarativeBase):
     pass
+
+
+@lru_cache
+def expected_database_heads() -> set[str]:
+    config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
+    return set(ScriptDirectory.from_config(config).get_heads())
 
 
 def make_engine(url: str) -> Engine:

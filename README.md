@@ -9,28 +9,33 @@ Backend work is committed to **`be`**. Do not commit this work to `main`.
 
 ## Current increment
 
-Implemented: FastAPI app factory, PostgreSQL configuration, SQLAlchemy, Alembic migration `0001`,
+Implemented foundation: FastAPI app factory, PostgreSQL configuration, SQLAlchemy, Alembic migrations,
 two synthetic workspaces, six repeatable demo accounts, Argon2 password hashing, JWT login,
 current-account lookup, Admin user list/create, process liveness/database readiness, safe error
 bodies, process-local login throttling, CORS, request IDs, and append-only audit events for
 authentication and user creation. PostgreSQL rejects audit UPDATE, DELETE and TRUNCATE.
 
-Implemented endpoints:
+Foundation endpoints:
 
 | Method | Path | Access |
 | --- | --- | --- |
 | GET | `/api/v1/health` | Public process liveness |
-| GET | `/api/v1/health/ready` | Public DB/foundation-table readiness |
+| GET | `/api/v1/health/ready` | Public DB/current-migration readiness |
 | POST | `/api/v1/auth/login` | Public JSON credentials, rate limited |
 | GET | `/api/v1/auth/me` | Active JWT account |
 | GET | `/api/v1/admin/users` | Admin JWT account |
 | POST | `/api/v1/admin/users` | Admin JWT account |
 
+Case drafts, helper grants, scoped consent and officer access are now implemented. Follow
+[backend/CASE_ACCESS.md](backend/CASE_ACCESS.md) for the additional 16 operations, migration 0002,
+retry/version semantics and local checks. [The iteration review](backend/ITERATION_2_REVIEW.md)
+records plan alignment, the confirmed live voice proof, fixes and remaining gaps.
+
 The canonical contract includes future endpoints. They are not implemented stubs and return 404
 until built. API keys are not implemented yet; presenting only `X-API-Key` fails authentication.
 Swagger currently lists the implemented subset at `/docs`; it is not a completion claim for the
-entire contract. Case ownership, helper grants, officer case/workspace isolation, consent,
-complaints, evidence, routing, case-integrated AI/voice, LangGraph, mock submission, notifications and audit browsing
+entire contract. Evidence, routing, case-integrated AI/voice, LangGraph, mock submission,
+officer decisions, notifications, API keys and complete audit browsing
 remain to be implemented. See [backend/ROADMAP.md](backend/ROADMAP.md).
 
 The latest foundation review, plan gaps, confirmed provider choices and Windows/Docker manual
@@ -43,10 +48,10 @@ connect voice to persisted complaints or add voice API endpoints.
 
 ## Run with Docker Compose
 
-Requires Docker with Compose. From repository root:
+Requires Docker with Compose. For first-time setup, from repository root:
 
 ```powershell
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
@@ -127,7 +132,7 @@ ruff check app migrations tests
 ruff format --check app migrations tests
 ```
 
-The default suite creates isolated SQLite databases, applies the real migration and checks seed
+The default suite creates isolated SQLite databases, applies the real migrations and checks seed
 repeatability, JWT failure modes, role restrictions, safe errors, audit protection, schema drift,
 and actual response conformance against the canonical OpenAPI 3.0.3 contract.
 SQLite is a local test aid; PostgreSQL remains the application database.

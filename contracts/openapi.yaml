@@ -26,6 +26,133 @@ security:
   - BearerAuth: []
   - ApiKeyAuth: []
 paths:
+  /api/v1/complaints/{id}/helper-grants:
+    parameters: &id002
+    - &id001
+      $ref: '#/components/parameters/complaint_idPath'
+    get:
+      tags:
+      - Helper
+      operationId: listHelperGrants
+      summary: List helper grants
+      description: Citizen owner only. A grant alone does not authorize sharing; current
+        consent is also required.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ./schemas.yaml#/components/schemas/complaint_access_grants
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+    post:
+      tags:
+      - Helper
+      operationId: grantHelperAccess
+      summary: Grant case-specific helper access
+      description: Citizen owner only. Creates or explicitly reactivates a helper grant.
+        Existing grants return 200. Consent is a separate required gate.
+      responses:
+        '201':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/complaint_access_grants
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/complaint_access_grants
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/components/schemas/HelperGrantCreate
+  /api/v1/complaints/{id}/helper-grants/{helper_id}/revoke:
+    parameters:
+    - *id001
+    - name: helper_id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    post:
+      tags:
+      - Helper
+      operationId: revokeHelperAccess
+      summary: Revoke helper access
+      description: Citizen owner only. Idempotently blocks future helper access even
+        if consent remains granted.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/complaint_access_grants
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/v1/admin/complaints/{id}/assignment:
+    parameters: *id002
+    post:
+      tags:
+      - Admin
+      operationId: assignOfficer
+      summary: Assign an officer to a submitted case
+      description: 'Admin. Requires an already submitted/reviewing case, pinned route,
+        active officer in the routed workspace, and current workspace consent. Returns
+        assignment metadata only; conveys no access to incident data. API-key scope:
+        admin:cases.'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/case_assignments
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/components/schemas/OfficerAssignmentCreate
   /api/v1/health:
     get:
       tags: [Health]
@@ -43,11 +170,11 @@ paths:
     get:
       tags: [Health]
       operationId: getReadiness
-      summary: Check database connectivity and foundation migration readiness
+      summary: Check database connectivity and current migration readiness
       security: []
       responses:
         '200':
-          description: Database and foundation table are accessible.
+          description: Database is accessible and all current migrations are applied.
           content:
             application/json:
               schema:
@@ -107,34 +234,66 @@ paths:
           $ref: '#/components/responses/Error'
   /api/v1/complaints:
     post:
-      tags: [Citizen complaints]
+      tags:
+      - Citizen complaints
       operationId: createComplaint
       summary: Create a complaint draft
-      description: Citizen. The authenticated citizen owns the new draft.
+      description: Citizen. The authenticated citizen owns the new draft. Optional Idempotency-Key
+        prevents duplicate draft creation on retries. Identical replay returns the current
+        draft with 200; conflicting reuse returns 409.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: './schemas.yaml#/components/schemas/IncidentInformation'
+              $ref: ./schemas.yaml#/components/schemas/IncidentInformation
       responses:
         '201':
           description: Created.
           content:
             application/json:
               schema:
-                $ref: './schemas.yaml#/components/schemas/complaints'
+                $ref: ./schemas.yaml#/components/schemas/complaints
+          headers:
+            ETag:
+              description: Quoted complaint content version, e.g. "1".
+              schema:
+                type: string
         '400':
           $ref: '#/components/responses/Error'
         '401':
           $ref: '#/components/responses/Error'
         '403':
           $ref: '#/components/responses/Error'
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/complaints
+          headers:
+            ETag:
+              description: Quoted complaint content version, e.g. "1".
+              schema:
+                type: string
+        '409':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: Use one opaque key for retries of the same citizen's draft creation.
+          A different payload with the same key conflicts.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
     get:
-      tags: [Citizen complaints]
+      tags:
+      - Citizen complaints
       operationId: listComplaints
       summary: List my complaints
-      description: 'Citizen. Returns only the caller’s own cases.'
+      description: Citizen. Returns only the caller’s own cases.
       responses:
         '200':
           description: Success.
@@ -143,26 +302,34 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: './schemas.yaml#/components/schemas/complaints'
+                  $ref: ./schemas.yaml#/components/schemas/complaints
         '401':
           $ref: '#/components/responses/Error'
         '403':
           $ref: '#/components/responses/Error'
+
   /api/v1/complaints/{id}:
     parameters:
-      - $ref: '#/components/parameters/complaint_idPath'
+    - $ref: '#/components/parameters/complaint_idPath'
     get:
-      tags: [Citizen complaints]
+      tags:
+      - Citizen complaints
       operationId: getComplaint
       summary: Read a complaint
-      description: Citizen who owns the case or Helper with a specific active grant and applicable consent. Return only information the caller may read.
+      description: Citizen who owns the case or Helper with a specific active grant
+        and applicable consent. Return only information the caller may read.
       responses:
         '200':
           description: Success.
           content:
             application/json:
               schema:
-                $ref: './schemas.yaml#/components/schemas/complaints'
+                $ref: ./schemas.yaml#/components/schemas/complaints
+          headers:
+            ETag:
+              description: Quoted complaint content version, e.g. "1".
+              schema:
+                type: string
         '400':
           $ref: '#/components/responses/Error'
         '401':
@@ -172,23 +339,30 @@ paths:
         '404':
           $ref: '#/components/responses/Error'
     patch:
-      tags: [Citizen complaints]
+      tags:
+      - Citizen complaints
       operationId: updateComplaint
       summary: Correct or complete a draft
-      description: Citizen who owns the case. Omitted fields remain unchanged. Explicit null records an unknown value.
+      description: Citizen who owns the case. Omitted fields remain unchanged. Explicit
+        null records an unknown value.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: './schemas.yaml#/components/schemas/IncidentPatch'
+              $ref: ./schemas.yaml#/components/schemas/IncidentPatch
       responses:
         '200':
           description: Success.
           content:
             application/json:
               schema:
-                $ref: './schemas.yaml#/components/schemas/complaints'
+                $ref: ./schemas.yaml#/components/schemas/complaints
+          headers:
+            ETag:
+              description: Quoted complaint content version, e.g. "1".
+              schema:
+                type: string
         '400':
           $ref: '#/components/responses/Error'
         '401':
@@ -197,6 +371,20 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: If-Match
+        in: header
+        required: false
+        description: Optional quoted content version, e.g. "1". A stale version returns
+          412. On retry after an uncertain save, GET the draft and reconcile before
+          retrying.
+        schema:
+          type: string
+
   /api/v1/complaints/{id}/evidence:
     parameters:
       - $ref: '#/components/parameters/complaint_idPath'
@@ -282,9 +470,10 @@ paths:
           $ref: '#/components/responses/Error'
   /api/v1/complaints/{id}/consents:
     parameters:
-      - $ref: '#/components/parameters/complaint_idPath'
+    - $ref: '#/components/parameters/complaint_idPath'
     get:
-      tags: [Consent]
+      tags:
+      - Consent
       operationId: listConsents
       summary: List case consent records
       description: Citizen who owns the complaint.
@@ -296,7 +485,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: './schemas.yaml#/components/schemas/consents'
+                  $ref: ./schemas.yaml#/components/schemas/consents
         '400':
           $ref: '#/components/responses/Error'
         '401':
@@ -306,23 +495,28 @@ paths:
         '404':
           $ref: '#/components/responses/Error'
     post:
-      tags: [Consent]
+      tags:
+      - Consent
       operationId: grantConsent
       summary: Grant data-sharing consent
-      description: Citizen who owns the complaint. Derive the grantor from the authenticated citizen.
+      description: Citizen who owns the complaint. Derive the grantor from the authenticated
+        citizen. One active consent per complaint/recipient/purpose is allowed; duplicate
+        grants return 409. Recipient and purpose use the shared namespaced format and
+        controlled enums. case_status is required to expose the case envelope; incident
+        fields are filtered to the remaining scopes.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: './schemas.yaml#/components/schemas/ConsentGrant'
+              $ref: ./schemas.yaml#/components/schemas/ConsentGrant
       responses:
         '201':
           description: Created.
           content:
             application/json:
               schema:
-                $ref: './schemas.yaml#/components/schemas/consents'
+                $ref: ./schemas.yaml#/components/schemas/consents
         '400':
           $ref: '#/components/responses/Error'
         '401':
@@ -331,6 +525,9 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
   /api/v1/consents/{id}:
     parameters:
       - $ref: '#/components/parameters/consent_idPath'
@@ -406,25 +603,32 @@ paths:
           $ref: '#/components/responses/Error'
   /api/v1/complaints/{id}/helper-information:
     parameters:
-      - $ref: '#/components/parameters/complaint_idPath'
+    - $ref: '#/components/parameters/complaint_idPath'
     post:
-      tags: [Helper]
+      tags:
+      - Helper
       operationId: addHelperInformation
       summary: Add information to an authorized case
-      description: Helper. Recheck the specific active grant and current consent. Updates only incident information within scope. Return only authorized case fields.
+      description: Helper. Recheck the specific active grant and current consent. Updates
+        only incident information within scope. Return only authorized case fields.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: './schemas.yaml#/components/schemas/HelperInformation'
+              $ref: ./schemas.yaml#/components/schemas/HelperInformation
       responses:
         '200':
           description: Success.
           content:
             application/json:
               schema:
-                $ref: './schemas.yaml#/components/schemas/complaints'
+                $ref: ./schemas.yaml#/components/schemas/complaints
+          headers:
+            ETag:
+              description: Quoted complaint content version, e.g. "1".
+              schema:
+                type: string
         '400':
           $ref: '#/components/responses/Error'
         '401':
@@ -433,6 +637,20 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: If-Match
+        in: header
+        required: false
+        description: Optional quoted content version, e.g. "1". A stale version returns
+          412. On retry after an uncertain save, GET the draft and reconcile before
+          retrying.
+        schema:
+          type: string
+
   /api/v1/officer/complaints:
     get:
       tags: [Officer]
@@ -454,19 +672,26 @@ paths:
           $ref: '#/components/responses/Error'
   /api/v1/officer/complaints/{id}:
     parameters:
-      - $ref: '#/components/parameters/complaint_idPath'
+    - $ref: '#/components/parameters/complaint_idPath'
     get:
-      tags: [Officer]
+      tags:
+      - Officer
       operationId: getOfficerComplaint
       summary: Review an assigned complaint
-      description: 'Officer. Requires assignment, matching workspace and permitted case scope. Evidence access also requires current authorization.'
+      description: Officer. Requires assignment, matching workspace and permitted case
+        scope. Evidence access also requires current authorization.
       responses:
         '200':
           description: Success.
           content:
             application/json:
               schema:
-                $ref: './schemas.yaml#/components/schemas/complaints'
+                $ref: ./schemas.yaml#/components/schemas/complaints
+          headers:
+            ETag:
+              description: Quoted complaint content version, e.g. "1".
+              schema:
+                type: string
         '400':
           $ref: '#/components/responses/Error'
         '401':
@@ -475,6 +700,7 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+
   /api/v1/officer/complaints/{id}/actions:
     parameters:
       - $ref: '#/components/parameters/complaint_idPath'

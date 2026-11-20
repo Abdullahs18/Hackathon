@@ -49,6 +49,9 @@ def test_runtime_routes_exist_in_canonical_contract(app):
     for path, methods in runtime["paths"].items():
         assert path in SPEC["paths"]
         for method, operation in methods.items():
+            if method == "parameters":
+                assert operation == expanded(SPEC["paths"][path]["parameters"])
+                continue
             assert operation["operationId"] == SPEC["paths"][path][method]["operationId"]
             assert operation["responses"] == expanded(SPEC["paths"][path][method]["responses"])
 
