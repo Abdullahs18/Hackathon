@@ -17,7 +17,7 @@ MAX_AUDIO_SECONDS = 60
 MIME_TYPES = {
     WAVE: "audio/wav",
     MP3: "audio/mpeg",
-    MP4: "audio/mp4",
+    MP4: "audio/m4a",
     OggOpus: "audio/ogg",
     OggVorbis: "audio/ogg",
 }

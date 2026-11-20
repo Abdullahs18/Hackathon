@@ -7,9 +7,10 @@ from unittest.mock import Mock
 import httpx2
 import pytest
 from google.genai import errors, types
+from mutagen.mp4 import MP4
 from requests.exceptions import RequestException
 
-from app.voice.audio import MAX_AUDIO_BYTES, load_audio
+from app.voice.audio import MAX_AUDIO_BYTES, MIME_TYPES, load_audio
 from app.voice.config import VoiceError, VoiceSettings
 from app.voice.providers import GeminiProvider, GTTSSpeaker
 from app.voice.schemas import extraction_schema, validate_extraction
@@ -44,6 +45,10 @@ def test_audio_detected_by_contents_not_extension(tmp_path):
     result = load_audio(path)
     assert result.mime_type == "audio/wav"
     assert result.duration_seconds == 1
+
+
+def test_m4a_uses_gemini_documented_mime_type():
+    assert MIME_TYPES[MP4] == "audio/m4a"
 
 
 @pytest.mark.parametrize(
