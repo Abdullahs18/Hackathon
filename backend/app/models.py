@@ -118,3 +118,28 @@ class Consent(Base):
     granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Evidence(Base):
+    __tablename__ = "evidence"
+    __table_args__ = (
+        UniqueConstraint(
+            "complaint_id", "uploader_id", "idempotency_key", name="uq_evidence_retry"
+        ),
+        CheckConstraint("file_size > 0 AND file_size <= 10485760", name="ck_evidence_size"),
+        CheckConstraint(
+            "verification_status = 'not_authenticity_verified'", name="ck_evidence_status"
+        ),
+    )
+    evidence_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.complaint_id"), index=True)
+    uploader_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    file_name: Mapped[str] = mapped_column(String(200))
+    file_type: Mapped[str] = mapped_column(String(100))
+    file_size: Mapped[int] = mapped_column()
+    sha256: Mapped[str] = mapped_column(String(64))
+    verification_status: Mapped[str] = mapped_column(String(40))
+    storage_key: Mapped[str] = mapped_column(String(40), unique=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128))
+    request_fingerprint: Mapped[str | None] = mapped_column(String(64))

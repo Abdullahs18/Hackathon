@@ -12,6 +12,8 @@ tags:
     description: Create, update and track complaints, attach evidence and authorize submission.
   - name: Consent
     description: View, grant, change and withdraw consent to share complaint data.
+  - name: Evidence
+    description: Upload original supporting files and retrieve them with current case permission and consent.
   - name: Helper
     description: Track and add information to cases covered by an active helper grant.
   - name: Officer
@@ -387,25 +389,39 @@ paths:
 
   /api/v1/complaints/{id}/evidence:
     parameters:
-      - $ref: '#/components/parameters/complaint_idPath'
+    - $ref: '#/components/parameters/complaint_idPath'
     post:
-      tags: [Citizen complaints]
+      tags:
+      - Citizen complaints
       operationId: uploadEvidence
       summary: Attach supporting evidence
-      description: 'Citizen who owns the case or Helper with a specific active grant and applicable consent. Validate size, type and contents. Accept images and PDFs. Store the original privately and record its hash.'
+      description: Citizen owner or specifically granted Helper with current case_status
+        and evidence consent. New uploads require an editable draft. Exactly one PNG/JPEG/WebP/static
+        PDF file, at most 10 MiB, 20 megapixels or 25 PDF pages, at most 10 files per
+        case. Decode/parse original bytes with bounded resources; reject encrypted/interactive
+        PDFs. Preserve original privately, record SHA-256, invalidate generated review
+        and update draft version. No OCR or authenticity verdict. Use an Idempotency-Key
+        for safe retries; identical replay returns 200, conflicting reuse 409. Current
+        permission/consent is always rechecked, including retries.
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
-              $ref: './schemas.yaml#/components/schemas/EvidenceUpload'
+              $ref: ./schemas.yaml#/components/schemas/EvidenceUpload
       responses:
         '201':
           description: Created.
           content:
             application/json:
               schema:
-                $ref: './schemas.yaml#/components/schemas/evidence'
+                $ref: ./schemas.yaml#/components/schemas/evidence
+          headers:
+            X-Complaint-Version:
+              description: Current complaint content version after upload/replay.
+              schema:
+                type: string
+                pattern: ^[1-9][0-9]*$
         '400':
           $ref: '#/components/responses/Error'
         '401':
@@ -413,6 +429,164 @@ paths:
         '403':
           $ref: '#/components/responses/Error'
         '404':
+          $ref: '#/components/responses/Error'
+        '200':
+          description: Authorized metadata; not authenticity-verified.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/evidence
+          headers:
+            X-Complaint-Version:
+              description: Current complaint content version after upload/replay.
+              schema:
+                type: string
+                pattern: ^[1-9][0-9]*$
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: Opaque retry key bound to uploader, case, original bytes, detected
+          type and sanitized filename.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+      - name: If-Match
+        in: header
+        required: false
+        description: Optional quoted complaint version, e.g. "1"; a stale new upload
+          is 412. Identical idempotent replay does not change the case.
+        schema:
+          type: string
+    get:
+      tags:
+      - Citizen complaints
+      operationId: listEvidence
+      summary: List authorized evidence metadata
+      description: Citizen owner, specifically granted Helper, or assigned Officer in
+        the matching workspace. Helper/Officer require current case_status and evidence
+        consent. Recheck every request; Admin has no bypass.
+      responses:
+        '200':
+          description: Authorized metadata; not authenticity-verified.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ./schemas.yaml#/components/schemas/evidence
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/v1/complaints/{id}/evidence/{evidence_id}:
+    parameters:
+    - $ref: '#/components/parameters/complaint_idPath'
+    - name: evidence_id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    get:
+      tags:
+      - Citizen complaints
+      operationId: getEvidence
+      summary: Read authorized evidence metadata
+      description: Citizen owner, specifically granted Helper, or assigned Officer in
+        the matching workspace. Helper/Officer require current case_status and evidence
+        consent. Recheck every request; Admin has no bypass.
+      responses:
+        '200':
+          description: Authorized metadata; not authenticity-verified.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/evidence
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/v1/complaints/{id}/evidence/{evidence_id}/content:
+    parameters:
+    - $ref: '#/components/parameters/complaint_idPath'
+    - name: evidence_id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    get:
+      tags:
+      - Citizen complaints
+      operationId: downloadEvidence
+      summary: Download an authorized original evidence file
+      description: Citizen owner, specifically granted Helper, or assigned Officer in
+        the matching workspace. Helper/Officer require current case_status and evidence
+        consent. Recheck every request; Admin has no bypass. Serve a bounded byte snapshot
+        as an attachment after verifying stored size/hash. No public or reusable signed
+        URLs; no inline evidence rendering. Already received copies cannot be retracted.
+      responses:
+        '200':
+          description: Private original bytes; not authenticity-verified.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+            X-Evidence-SHA256:
+              schema:
+                type: string
+                pattern: ^[a-f0-9]{64}$
+            X-Evidence-Verification:
+              schema:
+                type: string
+                enum:
+                - not_authenticity_verified
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '503':
           $ref: '#/components/responses/Error'
   /api/v1/complaints/{id}/analyze:
     parameters:

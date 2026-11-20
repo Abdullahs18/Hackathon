@@ -128,7 +128,11 @@ def require_version(case: Complaint, if_match: str | None) -> None:
 def apply_incident_patch(case: Complaint, patch: dict) -> bool:
     if case.current_status not in EDITABLE:
         raise HTTPException(409, "This complaint cannot be edited in its current state.")
-    if patch.get("evidence_ids") not in (None, []):
+    if (
+        "evidence_ids" in patch
+        and patch["evidence_ids"] != case.incident_data.get("evidence_ids")
+        and (patch["evidence_ids"] not in (None, []) or case.incident_data.get("evidence_ids"))
+    ):
         raise HTTPException(400, "Evidence must be attached through the protected upload workflow.")
     merged = {**case.incident_data, **patch}
     if merged == case.incident_data:

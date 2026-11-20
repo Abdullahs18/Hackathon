@@ -34,7 +34,9 @@ records plan alignment, the confirmed live voice proof, fixes and remaining gaps
 The canonical contract includes future endpoints. They are not implemented stubs and return 404
 until built. API keys are not implemented yet; presenting only `X-API-Key` fails authentication.
 Swagger currently lists the implemented subset at `/docs`; it is not a completion claim for the
-entire contract. Evidence, routing, case-integrated AI/voice, LangGraph, mock submission,
+entire contract. Private evidence upload/list/metadata/download are implemented; see
+[backend/EVIDENCE.md](backend/EVIDENCE.md) for migration 0003, persistent storage and local checks.
+Readiness now also checks private storage writability. Routing, case-integrated AI/voice, LangGraph, mock submission,
 officer decisions, notifications, API keys and complete audit browsing
 remain to be implemented. See [backend/ROADMAP.md](backend/ROADMAP.md).
 

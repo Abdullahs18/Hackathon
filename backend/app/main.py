@@ -11,6 +11,10 @@ from app.config import Settings
 from app.contracts import implemented_openapi
 from app.db import make_engine
 from app.errors import install_error_handlers
+from app.evidence_body_limit import EvidenceBodyLimit
+from app.evidence_routes import router as evidence_router
+from app.evidence_storage import EvidenceStore
+from app.evidence_validation import EvidenceValidator
 from app.routes import LoginLimiter, router
 from app.security import password_hasher
 
@@ -33,6 +37,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.engine = engine
+    app.state.evidence_store = EvidenceStore(settings.evidence_dir)
+    app.state.evidence_validator = EvidenceValidator()
+    app.add_middleware(EvidenceBodyLimit, max_bytes=settings.evidence_max_bytes)
     app.state.login_limiter = LoginLimiter(settings.login_attempts_per_minute)
     app.state.dummy_password_hash = password_hasher.hash(str(uuid4()))
     app.add_middleware(
@@ -40,7 +47,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_origins=settings.cors_origins,
         allow_methods=["GET", "POST", "PATCH"],
         allow_headers=["Authorization", "Content-Type", "X-API-Key", "Idempotency-Key", "If-Match"],
-        expose_headers=["ETag", "X-Request-ID"],
+        expose_headers=[
+            "ETag",
+            "X-Request-ID",
+            "Content-Disposition",
+            "X-Complaint-Version",
+            "X-Evidence-SHA256",
+            "X-Evidence-Verification",
+        ],
     )
     install_error_handlers(app)
 
@@ -66,10 +80,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(router)
     app.include_router(case_router)
+    app.include_router(evidence_router)
 
     def openapi():
         if app.openapi_schema is None:
-            app.openapi_schema = implemented_openapi([*router.routes, *case_router.routes])
+            app.openapi_schema = implemented_openapi(
+                [*router.routes, *case_router.routes, *evidence_router.routes]
+            )
         return app.openapi_schema
 
     app.openapi = openapi

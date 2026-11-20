@@ -8,7 +8,7 @@ are implemented; the end-to-end MVP remains in progress. Work only on `be`.
 | Foundation and login | FastAPI, configuration, PostgreSQL, Alembic, users/workspaces, seeds, JWT, Admin users, health, auth audit foundation | Contract validity, migrated schemas, login failures, role restrictions, seed repeatability, audit immutability | Implemented; see test/CI results for verification |
 | Contract/voice proof | Agree voice requests/responses; Urdu STT and spoken summary proof; pin mock-server tooling | Real Urdu input and output, provider failure paths, mock contract validation | Gemini/gTTS CLI and user-confirmed live Urdu proof complete; case integration and pinned mock-server verification remain pending. See VOICE_PROOF.md. |
 | Complaints and access | Complaint lifecycle, draft create/read/patch/list, helper grants, assignments, access policies | Ownership, active grants, officer assignment and cross-workspace raw API denial | Drafts, grants, assignment and read/write access gates implemented; officer decisions and later lifecycle transitions remain pending. See CASE_ACCESS.md. |
-| Evidence | Private image/PDF originals, content/type/size validation, SHA-256 metadata, protected retrieval | Invalid file content, unauthorized reads, hash preservation | Pending; retrieval endpoint requires contract extension |
+| Evidence | Private image/PDF originals, content/type/size validation, SHA-256 metadata, protected retrieval | Invalid file content, unauthorized reads, hash preservation | Implemented with canonical retrieval extensions; see EVIDENCE.md. Frontend contract review/integration pending. |
 | Consent foundations | Recipient/purpose/data scopes, view/grant/change/withdraw, current authorization checks | Immediate withdrawal blocks helper/recipient/evidence reads; Admin has no bypass | Implemented for current case reads/writes and assignment; evidence/mock-service/agent checks extend these gates when those features are built. |
 | AI flow | Voice interfaces, extraction, classification, readiness, follow-ups, formal draft | Structured-output errors, unknown values, thresholds, contradiction/duplicate hard stops | Pending |
 | Routing | DB rules, immutable versions, deterministic evaluation, Admin edit endpoints | New cases follow updated rules, old cases retain pinned versions, no-match handoff | Pending |
@@ -30,7 +30,7 @@ are implemented; the end-to-end MVP remains in progress. Work only on `be`.
 - Idempotency binds principal, complaint and approved payload. Identical replay returns prior
   confirmation; conflicting key reuse is 409. Check by key before retrying an uncertain result.
 - Ordinary application logs exclude bodies, credentials, URLs, evidence and personal information.
-- Existing public contract still needs decisions for voice, evidence reads and complaint history.
+- Existing public contract still needs decisions for voice and complaint history.
   Helper-grant management, officer assignment and draft saved-version metadata are now defined.
   Do not silently add frontend-facing endpoints without updating and reviewing contracts.
 - Contract fields describe API records, not every private database field. Password hashes and

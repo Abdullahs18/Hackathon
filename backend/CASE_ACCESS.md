@@ -146,7 +146,8 @@ remain empty. Automated policy tests use explicitly synthetic submitted-case fix
 not stand in for the future live routing/authorization/submission workflow. Do not edit database
 statuses manually to pretend that submission works.
 
-Still pending: protected evidence uploads/retrieval, persisted AI analysis/follow-ups, normalized
+Protected evidence uploads/retrieval were added in the next increment; see EVIDENCE.md.
+Still pending: persisted AI analysis/follow-ups, normalized
 classification, immutable routing versions, citizen submission authorization, LangGraph/state,
 typed mock services/idempotent filing, officer decisions, notifications, API keys, complete audit
 inspection, pinned mock-server verification and the team frontend integration checkpoints.

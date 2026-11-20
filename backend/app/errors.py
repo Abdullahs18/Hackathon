@@ -11,6 +11,7 @@ ERROR_NAMES = {
     405: "method_not_allowed",
     409: "conflict",
     412: "precondition_failed",
+    413: "payload_too_large",
     429: "rate_limited",
     503: "unavailable",
 }

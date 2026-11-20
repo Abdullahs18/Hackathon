@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -13,6 +15,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173"]
     login_attempts_per_minute: int = Field(default=10, ge=1, le=100)
     demo_password: SecretStr | None = None
+    evidence_dir: Path = Path("storage/evidence")
+    evidence_max_bytes: int = Field(default=10 * 1024 * 1024, ge=1024, le=10 * 1024 * 1024)
 
     @field_validator("jwt_secret")
     @classmethod

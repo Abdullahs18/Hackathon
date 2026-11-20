@@ -6,6 +6,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN useradd --create-home --uid 10001 dastak
 COPY --chown=dastak:dastak backend/ ./
 COPY --chown=dastak:dastak contracts/ /srv/contracts/
+RUN mkdir -p /srv/backend/storage/evidence && chown dastak:dastak /srv/backend/storage/evidence
 USER dastak
 EXPOSE 8000
 CMD ["uvicorn", "app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-access-log", "--no-proxy-headers"]

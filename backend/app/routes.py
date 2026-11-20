@@ -51,7 +51,7 @@ def health():
 
 
 @router.get("/health/ready", response_model=Health, tags=["Health"], operation_id="getReadiness")
-def ready(session: SessionDep):
+def ready(request: Request, session: SessionDep):
     try:
         revisions = set(session.scalars(text("SELECT version_num FROM alembic_version")))
         if revisions != expected_database_heads():
@@ -59,6 +59,7 @@ def ready(session: SessionDep):
         session.execute(text("SELECT user_id FROM users LIMIT 1"))
     except SQLAlchemyError:
         raise HTTPException(503, "Database or migrations are unavailable.") from None
+    request.app.state.evidence_store.check()
     return {"status": "ok", "simulated": True}
 
 
