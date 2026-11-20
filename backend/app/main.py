@@ -6,6 +6,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.analysis_routes import AnalysisGuard, provider_factory
+from app.analysis_routes import router as analysis_router
 from app.case_routes import router as case_router
 from app.config import Settings
 from app.contracts import implemented_openapi
@@ -37,6 +39,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.engine = engine
+    app.state.analysis_guard = AnalysisGuard()
+    app.state.analysis_provider_factory = provider_factory
     app.state.evidence_store = EvidenceStore(settings.evidence_dir)
     app.state.evidence_validator = EvidenceValidator()
     app.add_middleware(EvidenceBodyLimit, max_bytes=settings.evidence_max_bytes)
@@ -81,11 +85,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(router)
     app.include_router(case_router)
     app.include_router(evidence_router)
+    app.include_router(analysis_router)
 
     def openapi():
         if app.openapi_schema is None:
             app.openapi_schema = implemented_openapi(
-                [*router.routes, *case_router.routes, *evidence_router.routes]
+                [
+                    *router.routes,
+                    *case_router.routes,
+                    *evidence_router.routes,
+                    *analysis_router.routes,
+                ]
             )
         return app.openapi_schema
 

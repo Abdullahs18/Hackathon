@@ -1,4 +1,3 @@
-# Shared OpenAPI 3.0 schema components. References resolve relative to this file.
 components:
   schemas:
     ConsentDataScope:
@@ -20,8 +19,9 @@ components:
       - incident_data.suspect_details
       - incident_data.citizen_confirmed_corrections
       description: case_status shares the case envelope. incident_data shares incident
-        fields except evidence_ids; evidence shares evidence IDs/access. Individual incident_data.field
-        scopes narrow incident sharing. These are data scopes, separate from API-key scopes.
+        fields except evidence_ids; evidence shares evidence IDs/access. Individual
+        incident_data.field scopes narrow incident sharing. These are data scopes,
+        separate from API-key scopes.
     ConsentPurpose:
       type: string
       enum:
@@ -49,9 +49,15 @@ components:
           maxLength: 100
     VoiceExtraction:
       type: object
-      description: Provider-proof preview only. Validate against IncidentInformation and obtain citizen corrections before using it in a complaint. This is not a filed or authorized complaint.
+      description: Unconfirmed extracted incident suggestions, a plain Urdu summary
+        and uncertainties. Used by the provider proof and persisted saved-case assessment.
+        Validate and obtain citizen corrections before applying suggestions; never
+        grants consent or filing authority.
       additionalProperties: false
-      required: [incident_data, spoken_summary_ur, uncertainties]
+      required:
+      - incident_data
+      - spoken_summary_ur
+      - uncertainties
       properties:
         incident_data:
           $ref: '#/components/schemas/IncidentInformation'
@@ -66,54 +72,69 @@ components:
     Health:
       type: object
       additionalProperties: false
-      required: [status, simulated]
+      required:
+      - status
+      - simulated
       properties:
         status:
           type: string
-          enum: [ok]
+          enum:
+          - ok
         simulated:
           type: boolean
-          enum: [true]
+          enum:
+          - true
     Role:
       type: string
-      enum: [Citizen, Helper, Officer, Admin]
+      enum:
+      - Citizen
+      - Helper
+      - Officer
+      - Admin
     WorkflowStatus:
       type: string
       enum:
-        - DRAFT
-        - COLLECT_INFORMATION
-        - VOICE_TRANSCRIPTION
-        - STRUCTURED_EXTRACTION
-        - CLASSIFICATION
-        - VALIDATION
-        - NEEDS_INFORMATION
-        - HUMAN_REVIEW
-        - ROUTING_RULE_EVALUATION
-        - COMPLAINT_GENERATION
-        - CITIZEN_REVIEW
-        - CONSENT_AND_AUTHORIZATION
-        - AGENT_EXECUTION
-        - MOCK_SERVICE_CALLS
-        - SUBMISSION_VERIFICATION
-        - SUBMITTED
-        - OFFICER_REVIEW
-        - RESOLVED
+      - DRAFT
+      - COLLECT_INFORMATION
+      - VOICE_TRANSCRIPTION
+      - STRUCTURED_EXTRACTION
+      - CLASSIFICATION
+      - VALIDATION
+      - NEEDS_INFORMATION
+      - HUMAN_REVIEW
+      - ROUTING_RULE_EVALUATION
+      - COMPLAINT_GENERATION
+      - CITIZEN_REVIEW
+      - CONSENT_AND_AUTHORIZATION
+      - AGENT_EXECUTION
+      - MOCK_SERVICE_CALLS
+      - SUBMISSION_VERIFICATION
+      - SUBMITTED
+      - OFFICER_REVIEW
+      - RESOLVED
     ConsentStatus:
       type: string
-      enum: [granted, withdrawn]
+      enum:
+      - granted
+      - withdrawn
     OfficerAction:
       type: string
-      enum: [request_information, accept, reject, escalate, close]
+      enum:
+      - request_information
+      - accept
+      - reject
+      - escalate
+      - close
     ClassificationResult:
       type: object
       additionalProperties: false
       required:
-        - incident_type
-        - confidence
-        - suspicious_indicators
-        - explanation
-        - missing_fields
-        - contradiction_flags
+      - incident_type
+      - confidence
+      - suspicious_indicators
+      - explanation
+      - missing_fields
+      - contradiction_flags
       properties:
         incident_type:
           type: string
@@ -135,30 +156,24 @@ components:
           type: array
           items:
             type: string
-      x-pydantic-source: |
-        from pydantic import BaseModel, Field
-
-        class ClassificationResult(BaseModel):
-            incident_type: str
-            confidence: float = Field(ge=0, le=1)
-            suspicious_indicators: list[str]
-            explanation: str
-            missing_fields: list[str]
-            contradiction_flags: list[str]
+      x-pydantic-source: "from pydantic import BaseModel, Field\n\nclass ClassificationResult(BaseModel):\n\
+        \    incident_type: str\n    confidence: float = Field(ge=0, le=1)\n    suspicious_indicators:\
+        \ list[str]\n    explanation: str\n    missing_fields: list[str]\n    contradiction_flags:\
+        \ list[str]\n"
     ComplaintDraft:
       type: object
       additionalProperties: false
       required:
-        - incident_type
-        - incident_date
-        - description
-        - amount
-        - currency
-        - payment_method
-        - transaction_reference
-        - suspect_details
-        - evidence_ids
-        - citizen_confirmed
+      - incident_type
+      - incident_date
+      - description
+      - amount
+      - currency
+      - payment_method
+      - transaction_reference
+      - suspect_details
+      - evidence_ids
+      - citizen_confirmed
       properties:
         incident_type:
           type: string
@@ -190,23 +205,15 @@ components:
             type: string
         citizen_confirmed:
           type: boolean
-      x-pydantic-source: |
-        from pydantic import BaseModel
-
-        class ComplaintDraft(BaseModel):
-            incident_type: str
-            incident_date: str | None
-            description: str
-            amount: float | None
-            currency: str | None
-            payment_method: str | None
-            transaction_reference: str | None
-            suspect_details: list[str]
-            evidence_ids: list[str]
-            citizen_confirmed: bool
+      x-pydantic-source: "from pydantic import BaseModel\n\nclass ComplaintDraft(BaseModel):\n\
+        \    incident_type: str\n    incident_date: str | None\n    description: str\n\
+        \    amount: float | None\n    currency: str | None\n    payment_method: str\
+        \ | None\n    transaction_reference: str | None\n    suspect_details: list[str]\n\
+        \    evidence_ids: list[str]\n    citizen_confirmed: bool\n"
     IncidentInformation:
       type: object
-      description: Partial incident record. Omit uncollected fields. Use null for unknown values. An approximate date may be supplied as text.
+      description: Partial incident record. Omit uncollected fields. Use null for
+        unknown values. An approximate date may be supplied as text.
       additionalProperties: false
       properties:
         incident_type:
@@ -253,7 +260,7 @@ components:
           maxItems: 100
           items:
             type: string
-          description: 'Reported phone numbers, URLs, accounts or profiles.'
+          description: Reported phone numbers, URLs, accounts or profiles.
           nullable: true
         evidence_ids:
           type: array
@@ -269,7 +276,8 @@ components:
           nullable: true
     HelperInformation:
       type: object
-      description: Information supplied under an active grant. Only the citizen can confirm corrections.
+      description: Information supplied under an active grant. Only the citizen can
+        confirm corrections.
       additionalProperties: false
       properties:
         incident_type:
@@ -316,7 +324,7 @@ components:
           maxItems: 100
           items:
             type: string
-          description: 'Reported phone numbers, URLs, accounts or profiles.'
+          description: Reported phone numbers, URLs, accounts or profiles.
           nullable: true
         evidence_ids:
           type: array
@@ -328,7 +336,10 @@ components:
     users:
       type: object
       additionalProperties: false
-      required: [user_id, role, workspace_id]
+      required:
+      - user_id
+      - role
+      - workspace_id
       properties:
         user_id:
           type: string
@@ -342,7 +353,9 @@ components:
     workspaces:
       type: object
       additionalProperties: false
-      required: [workspace_id, name]
+      required:
+      - workspace_id
+      - name
       properties:
         workspace_id:
           type: string
@@ -351,20 +364,22 @@ components:
           type: string
     complaints:
       type: object
-      description: citizen_id references users.user_id. Routing sets destination_workspace_id and pins the immutable rule_version_id. Both are null before a route is selected.
+      description: citizen_id references users.user_id. Routing sets destination_workspace_id
+        and pins the immutable rule_version_id. Both are null before a route is selected.
       additionalProperties: false
       required:
-        - complaint_id
-        - citizen_id
-        - destination_workspace_id
-        - rule_version_id
-        - current_status
-        - incident_data
+      - complaint_id
+      - citizen_id
+      - destination_workspace_id
+      - rule_version_id
+      - current_status
+      - incident_data
       properties:
         version:
           type: integer
           minimum: 1
-          description: Draft content version, also returned as a quoted ETag.
+          description: Saved complaint revision for incident changes and analysis/status
+            updates; returned as a quoted ETag.
         created_at:
           type: string
           format: date-time
@@ -390,7 +405,8 @@ components:
         incident_type:
           type: string
           nullable: true
-          description: Duplicates incident_data.incident_type so routing queries can filter a plain column without querying the JSON record.
+          description: Duplicates incident_data.incident_type so routing queries can
+            filter a plain column without querying the JSON record.
         incident_data:
           $ref: '#/components/schemas/IncidentInformation'
         complaint_draft:
@@ -398,7 +414,10 @@ components:
     complaint_access_grants:
       type: object
       additionalProperties: false
-      required: [complaint_id, helper_id, active]
+      required:
+      - complaint_id
+      - helper_id
+      - active
       properties:
         complaint_id:
           type: string
@@ -412,7 +431,10 @@ components:
       type: object
       description: The assigned officer and case must belong to this workspace.
       additionalProperties: false
-      required: [complaint_id, officer_id, workspace_id]
+      required:
+      - complaint_id
+      - officer_id
+      - workspace_id
       properties:
         complaint_id:
           type: string
@@ -425,18 +447,19 @@ components:
           minLength: 1
     evidence:
       type: object
-      description: Citizen-submitted original; not authenticity-verified. This metadata never contains a public URL or private storage path.
+      description: Citizen-submitted original; not authenticity-verified. This metadata
+        never contains a public URL or private storage path.
       additionalProperties: false
       required:
-        - evidence_id
-        - complaint_id
-        - uploader_id
-        - timestamp
-        - file_name
-        - file_type
-        - file_size
-        - sha256
-        - verification_status
+      - evidence_id
+      - complaint_id
+      - uploader_id
+      - timestamp
+      - file_name
+      - file_type
+      - file_size
+      - sha256
+      - verification_status
       properties:
         evidence_id:
           type: string
@@ -455,7 +478,11 @@ components:
           maxLength: 200
         file_type:
           type: string
-          enum: [image/png, image/jpeg, image/webp, application/pdf]
+          enum:
+          - image/png
+          - image/jpeg
+          - image/webp
+          - application/pdf
         file_size:
           type: integer
           minimum: 1
@@ -463,20 +490,25 @@ components:
           description: Bytes.
         sha256:
           type: string
-          pattern: '^[a-fA-F0-9]{64}$'
+          pattern: ^[a-fA-F0-9]{64}$
         verification_status:
           type: string
-          enum: [not_authenticity_verified]
+          enum:
+          - not_authenticity_verified
     ConsentGrant:
       type: object
       additionalProperties: false
-      required: [recipient, purpose, data_scopes]
+      required:
+      - recipient
+      - purpose
+      - data_scopes
       properties:
         recipient:
           type: string
           minLength: 1
           maxLength: 150
-          description: 'user:<helper_user_id> for helper_assistance; workspace:<workspace_id> for complaint_submission.'
+          description: user:<helper_user_id> for helper_assistance; workspace:<workspace_id>
+            for complaint_submission.
         purpose:
           $ref: '#/components/schemas/ConsentPurpose'
         data_scopes:
@@ -493,7 +525,8 @@ components:
           type: string
           minLength: 1
           maxLength: 150
-          description: 'user:<helper_user_id> for helper_assistance; workspace:<workspace_id> for complaint_submission.'
+          description: user:<helper_user_id> for helper_assistance; workspace:<workspace_id>
+            for complaint_submission.
         purpose:
           $ref: '#/components/schemas/ConsentPurpose'
         data_scopes:
@@ -507,16 +540,16 @@ components:
       type: object
       additionalProperties: false
       required:
-        - consent_id
-        - complaint_id
-        - citizen_id
-        - recipient
-        - purpose
-        - data_scopes
-        - status
-        - granted_at
-        - changed_at
-        - withdrawn_at
+      - consent_id
+      - complaint_id
+      - citizen_id
+      - recipient
+      - purpose
+      - data_scopes
+      - status
+      - granted_at
+      - changed_at
+      - withdrawn_at
       properties:
         consent_id:
           type: string
@@ -531,7 +564,8 @@ components:
           type: string
           minLength: 1
           maxLength: 150
-          description: 'user:<helper_user_id> for helper_assistance; workspace:<workspace_id> for complaint_submission.'
+          description: user:<helper_user_id> for helper_assistance; workspace:<workspace_id>
+            for complaint_submission.
         purpose:
           $ref: '#/components/schemas/ConsentPurpose'
         data_scopes:
@@ -557,13 +591,13 @@ components:
       type: object
       additionalProperties: false
       required:
-        - name
-        - incident_type
-        - destination_workspace_id
-        - priority
-        - active
-        - explanation
-        - justification
+      - name
+      - incident_type
+      - destination_workspace_id
+      - priority
+      - active
+      - explanation
+      - justification
       properties:
         name:
           type: string
@@ -605,17 +639,17 @@ components:
       description: Immutable snapshot. created_by references the Admin user.
       additionalProperties: false
       required:
-        - rule_id
-        - rule_version_id
-        - name
-        - incident_type
-        - destination_workspace_id
-        - priority
-        - active
-        - explanation
-        - justification
-        - created_by
-        - timestamp
+      - rule_id
+      - rule_version_id
+      - name
+      - incident_type
+      - destination_workspace_id
+      - priority
+      - active
+      - explanation
+      - justification
+      - created_by
+      - timestamp
       properties:
         rule_id:
           type: string
@@ -646,20 +680,21 @@ components:
           format: date-time
     routing_rules:
       type: object
-      description: Current definition and its active version identifier. Edits create immutable snapshots.
+      description: Current definition and its active version identifier. Edits create
+        immutable snapshots.
       additionalProperties: false
       required:
-        - rule_id
-        - rule_version_id
-        - name
-        - incident_type
-        - destination_workspace_id
-        - priority
-        - active
-        - explanation
-        - justification
-        - created_by
-        - timestamp
+      - rule_id
+      - rule_version_id
+      - name
+      - incident_type
+      - destination_workspace_id
+      - priority
+      - active
+      - explanation
+      - justification
+      - created_by
+      - timestamp
       properties:
         rule_id:
           type: string
@@ -692,24 +727,24 @@ components:
       type: object
       additionalProperties: false
       required:
-        - agent_run_id
-        - complaint_id
-        - citizen_id
-        - language
-        - transcript
-        - incident_data
-        - classification
-        - readiness_score
-        - missing_fields
-        - contradiction_flags
-        - rule_version_id
-        - destination_workspace_id
-        - consent_granted
-        - citizen_authorized
-        - idempotency_key
-        - submission_reference
-        - current_status
-        - errors
+      - agent_run_id
+      - complaint_id
+      - citizen_id
+      - language
+      - transcript
+      - incident_data
+      - classification
+      - readiness_score
+      - missing_fields
+      - contradiction_flags
+      - rule_version_id
+      - destination_workspace_id
+      - consent_granted
+      - citizen_authorized
+      - idempotency_key
+      - submission_reference
+      - current_status
+      - errors
       properties:
         agent_run_id:
           type: string
@@ -729,11 +764,11 @@ components:
           $ref: '#/components/schemas/IncidentInformation'
         classification:
           oneOf:
-            - $ref: '#/components/schemas/ClassificationResult'
-            - type: object
-              nullable: true
-              enum:
-                - null
+          - $ref: '#/components/schemas/ClassificationResult'
+          - type: object
+            nullable: true
+            enum:
+            - null
         readiness_score:
           type: number
           minimum: 0
@@ -775,7 +810,13 @@ components:
       type: object
       description: Sanitized summaries of individual agent actions and tool calls.
       additionalProperties: false
-      required: [agent_action_id, agent_run_id, action, input, result, timestamp]
+      required:
+      - agent_action_id
+      - agent_run_id
+      - action
+      - input
+      - result
+      - timestamp
       properties:
         agent_action_id:
           type: string
@@ -796,7 +837,13 @@ components:
     submissions:
       type: object
       additionalProperties: false
-      required: [submission_id, complaint_id, idempotency_key, submission_reference, result, timestamp]
+      required:
+      - submission_id
+      - complaint_id
+      - idempotency_key
+      - submission_reference
+      - result
+      - timestamp
       properties:
         submission_id:
           type: string
@@ -820,7 +867,10 @@ components:
       type: object
       description: Confirmed simulated submission.
       additionalProperties: false
-      required: [complaint_id, idempotency_key, submission_reference]
+      required:
+      - complaint_id
+      - idempotency_key
+      - submission_reference
       properties:
         complaint_id:
           type: string
@@ -834,7 +884,9 @@ components:
     SubmissionRequest:
       type: object
       additionalProperties: false
-      required: [complaint_id, complaint_draft]
+      required:
+      - complaint_id
+      - complaint_draft
       properties:
         complaint_id:
           type: string
@@ -843,18 +895,19 @@ components:
           $ref: '#/components/schemas/ComplaintDraft'
     audit_logs:
       type: object
-      description: Append-only summary. Access to trace details follows the underlying data permissions.
+      description: Append-only summary. Access to trace details follows the underlying
+        data permissions.
       additionalProperties: false
       required:
-        - audit_log_id
-        - complaint_id
-        - user_id
-        - agent_run_id
-        - action
-        - input
-        - result
-        - rule_version_id
-        - timestamp
+      - audit_log_id
+      - complaint_id
+      - user_id
+      - agent_run_id
+      - action
+      - input
+      - result
+      - rule_version_id
+      - timestamp
       properties:
         audit_log_id:
           type: string
@@ -889,7 +942,13 @@ components:
     notifications:
       type: object
       additionalProperties: false
-      required: [notification_id, user_id, complaint_id, message, read, timestamp]
+      required:
+      - notification_id
+      - user_id
+      - complaint_id
+      - message
+      - read
+      - timestamp
       properties:
         notification_id:
           type: string
@@ -910,23 +969,27 @@ components:
     ApiKeyScope:
       type: string
       enum:
-        - 'complaints:read'
-        - 'complaints:write'
-        - 'consents:read'
-        - 'consents:write'
-        - 'helper:access'
-        - 'officer:access'
-        - 'admin:users'
-        - 'admin:cases'
-        - 'admin:rules'
-        - 'admin:audit'
-        - 'admin:api_keys'
-        - 'mock:services'
-        - 'notifications:read'
+      - complaints:read
+      - complaints:write
+      - consents:read
+      - consents:write
+      - helper:access
+      - officer:access
+      - admin:users
+      - admin:cases
+      - admin:rules
+      - admin:audit
+      - admin:api_keys
+      - mock:services
+      - notifications:read
     ApiKeyMetadata:
       type: object
       additionalProperties: false
-      required: [api_key_id, scopes, expires_at, revoked]
+      required:
+      - api_key_id
+      - scopes
+      - expires_at
+      - revoked
       properties:
         api_key_id:
           type: string
@@ -946,7 +1009,12 @@ components:
       type: object
       description: Persistence only. List and revoke operations return metadata.
       additionalProperties: false
-      required: [api_key_id, scopes, expires_at, revoked, key_hash]
+      required:
+      - api_key_id
+      - scopes
+      - expires_at
+      - revoked
+      - key_hash
       properties:
         api_key_id:
           type: string
@@ -967,7 +1035,9 @@ components:
     ApiKeyCreate:
       type: object
       additionalProperties: false
-      required: [scopes, expires_at]
+      required:
+      - scopes
+      - expires_at
       properties:
         scopes:
           type: array
@@ -981,7 +1051,12 @@ components:
     ApiKeyIssued:
       type: object
       additionalProperties: false
-      required: [api_key_id, scopes, expires_at, revoked, api_key]
+      required:
+      - api_key_id
+      - scopes
+      - expires_at
+      - revoked
+      - api_key
       properties:
         api_key_id:
           type: string
@@ -1002,7 +1077,9 @@ components:
     mock_identity_records:
       type: object
       additionalProperties: false
-      required: [identity_reference, user_id]
+      required:
+      - identity_reference
+      - user_id
       properties:
         identity_reference:
           type: string
@@ -1013,7 +1090,11 @@ components:
     mock_payment_transactions:
       type: object
       additionalProperties: false
-      required: [transaction_reference, amount, currency, payment_method]
+      required:
+      - transaction_reference
+      - amount
+      - currency
+      - payment_method
       properties:
         transaction_reference:
           type: string
@@ -1028,7 +1109,10 @@ components:
     mock_reporting_requirements:
       type: object
       additionalProperties: false
-      required: [incident_type, requirements, available_fields]
+      required:
+      - incident_type
+      - requirements
+      - available_fields
       properties:
         incident_type:
           type: string
@@ -1043,7 +1127,9 @@ components:
     Login:
       type: object
       additionalProperties: false
-      required: [user_id, password]
+      required:
+      - user_id
+      - password
       properties:
         user_id:
           type: string
@@ -1057,14 +1143,19 @@ components:
     LoginResult:
       type: object
       additionalProperties: false
-      required: [access_token]
+      required:
+      - access_token
       properties:
         access_token:
           type: string
     UserCreate:
       type: object
       additionalProperties: false
-      required: [user_id, password, role, workspace_id]
+      required:
+      - user_id
+      - password
+      - role
+      - workspace_id
       properties:
         user_id:
           type: string
@@ -1085,7 +1176,9 @@ components:
     OfficerDecision:
       type: object
       additionalProperties: false
-      required: [action, reason]
+      required:
+      - action
+      - reason
       properties:
         action:
           $ref: '#/components/schemas/OfficerAction'
@@ -1095,16 +1188,20 @@ components:
     AuthorizeSubmission:
       type: object
       additionalProperties: false
-      required: [citizen_authorized]
+      required:
+      - citizen_authorized
       properties:
         citizen_authorized:
           type: boolean
           enum:
-            - true
+          - true
     Analysis:
       type: object
       additionalProperties: false
-      required: [classification, readiness_score, current_status]
+      required:
+      - classification
+      - readiness_score
+      - current_status
       properties:
         classification:
           $ref: '#/components/schemas/ClassificationResult'
@@ -1115,11 +1212,51 @@ components:
           nullable: true
         current_status:
           $ref: '#/components/schemas/WorkflowStatus'
+        analysis_id:
+          type: string
+          minLength: 1
+        input_version:
+          type: integer
+          minimum: 1
+        complaint_version:
+          type: integer
+          minimum: 1
+        analyzed_at:
+          type: string
+          format: date-time
+        model:
+          type: string
+          minLength: 1
+        extraction:
+          $ref: '#/components/schemas/VoiceExtraction'
+        follow_up_questions_ur:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+        handoff_reasons:
+          type: array
+          items:
+            type: string
+        requires_citizen_review:
+          type: boolean
+          enum:
+          - true
+        submitted:
+          type: boolean
+          enum:
+          - false
+      description: Persisted, owner-only assessment of an exact complaint version.
+        Derived status/score never authorize submission. Missing routing implementation
+        always produces a human-review hard stop.
     EvidenceUpload:
       type: object
-      description: Exactly one file field. Original PNG, JPEG, WebP or static unencrypted PDF, at most 10 MiB. Filenames, declared MIME, decoded content and resource limits are checked. No OCR or authenticity claim.
+      description: Exactly one file field. Original PNG, JPEG, WebP or static unencrypted
+        PDF, at most 10 MiB. Filenames, declared MIME, decoded content and resource
+        limits are checked. No OCR or authenticity claim.
       additionalProperties: false
-      required: [file]
+      required:
+      - file
       properties:
         file:
           type: string
@@ -1127,7 +1264,9 @@ components:
     Error:
       type: object
       additionalProperties: false
-      required: [error, detail]
+      required:
+      - error
+      - detail
       properties:
         error:
           type: string
@@ -1135,7 +1274,8 @@ components:
           type: string
     IncidentPatch:
       type: object
-      description: Partial incident record. Omit uncollected fields. Use null for unknown values. An approximate date may be supplied as text.
+      description: Partial incident record. Omit uncollected fields. Use null for
+        unknown values. An approximate date may be supplied as text.
       additionalProperties: false
       properties:
         incident_type:
@@ -1182,7 +1322,7 @@ components:
           maxItems: 100
           items:
             type: string
-          description: 'Reported phone numbers, URLs, accounts or profiles.'
+          description: Reported phone numbers, URLs, accounts or profiles.
           nullable: true
         evidence_ids:
           type: array
@@ -1197,3 +1337,30 @@ components:
             type: string
           nullable: true
       minProperties: 1
+    AnalysisRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - allow_external_processing
+      properties:
+        allow_external_processing:
+          type: boolean
+          enum:
+          - true
+          description: Explicit permission for this saved case version to be sent
+            to Gemini. No evidence bytes, credentials or identity records are sent.
+            This is not submission authorization.
+    CaseAssessment:
+      type: object
+      additionalProperties: false
+      required:
+      - extraction
+      - classification
+      properties:
+        extraction:
+          $ref: '#/components/schemas/VoiceExtraction'
+        classification:
+          $ref: '#/components/schemas/ClassificationResult'
+      description: Validated provider assessment of untrusted saved incident data.
+        Extraction is an unconfirmed suggestion; never overwrites saved citizen facts
+        or authorizes filing.

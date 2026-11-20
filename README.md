@@ -36,7 +36,11 @@ until built. API keys are not implemented yet; presenting only `X-API-Key` fails
 Swagger currently lists the implemented subset at `/docs`; it is not a completion claim for the
 entire contract. Private evidence upload/list/metadata/download are implemented; see
 [backend/EVIDENCE.md](backend/EVIDENCE.md) for migration 0003, persistent storage and local checks.
-Readiness now also checks private storage writability. Routing, case-integrated AI/voice, LangGraph, mock submission,
+Readiness now also checks private storage writability. Saved-case Gemini text assessment and
+owner-only result recovery are implemented; see [backend/CASE_ANALYSIS.md](backend/CASE_ANALYSIS.md)
+for explicit provider permission, migration 0004, current routing hard stops and local checks.
+[The pre-analysis audit](backend/ITERATION_3_REVIEW.md) records a reproduced PDF validation fix
+and the verification boundaries. Routing, the full AI/voice flow, LangGraph, mock submission,
 officer decisions, notifications, API keys and complete audit browsing
 remain to be implemented. See [backend/ROADMAP.md](backend/ROADMAP.md).
 

@@ -120,6 +120,19 @@ class Consent(Base):
     withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class CaseAnalysis(Base):
+    __tablename__ = "case_analyses"
+    __table_args__ = (
+        UniqueConstraint("complaint_id", "input_version", name="uq_analysis_input_version"),
+    )
+    analysis_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.complaint_id"), index=True)
+    input_version: Mapped[int]
+    result_version: Mapped[int]
+    result: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class Evidence(Base):
     __tablename__ = "evidence"
     __table_args__ = (

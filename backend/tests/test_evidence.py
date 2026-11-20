@@ -9,7 +9,7 @@ from alembic.config import Config
 from fastapi import HTTPException
 from PIL import Image
 from pypdf import PdfWriter
-from pypdf.generic import DictionaryObject, NameObject, TextStringObject
+from pypdf.generic import ArrayObject, DictionaryObject, NameObject, TextStringObject
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -319,3 +319,30 @@ def test_private_store_unavailable_and_safe_paths(client, owner, case, app):
     assert client.get("/api/v1/health/ready").status_code == 503
     with pytest.raises(HTTPException):
         store.path("../../outside")
+
+
+def test_pdf_external_actions_are_not_static(client, owner, case):
+    writer = PdfWriter()
+    page = writer.add_blank_page(width=100, height=100)
+    page[NameObject("/Annots")] = ArrayObject(
+        [
+            DictionaryObject(
+                {
+                    NameObject("/Type"): NameObject("/Annot"),
+                    NameObject("/Subtype"): NameObject("/Link"),
+                    NameObject("/A"): DictionaryObject(
+                        {
+                            NameObject("/S"): NameObject("/GoToE"),
+                            NameObject("/F"): TextStringObject("external.pdf"),
+                        }
+                    ),
+                }
+            )
+        ]
+    )
+    output = BytesIO()
+    writer.write(output)
+    assert (
+        upload(client, owner, case, output.getvalue(), "action.pdf", "application/pdf").status_code
+        == 400
+    )

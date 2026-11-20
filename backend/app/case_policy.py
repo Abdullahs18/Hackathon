@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models import AccessGrant, CaseAssignment, Complaint, Consent, User
 
-EDITABLE = {"DRAFT", "COLLECT_INFORMATION", "NEEDS_INFORMATION", "CITIZEN_REVIEW"}
+EDITABLE = {"DRAFT", "COLLECT_INFORMATION", "NEEDS_INFORMATION", "CITIZEN_REVIEW", "HUMAN_REVIEW"}
 OFFICER_VISIBLE = {"SUBMITTED", "OFFICER_REVIEW", "RESOLVED"}
 
 

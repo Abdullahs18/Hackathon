@@ -28,7 +28,9 @@ def _json_schema(name: str) -> dict:
             return value
         if "$ref" in value:
             return convert(definitions[value["$ref"].split("/")[-1]])
-        result = {k: convert(v) for k, v in value.items() if k != "nullable"}
+        result = {
+            k: convert(v) for k, v in value.items() if k != "nullable" and not k.startswith("x-")
+        }
         return {"anyOf": [result, {"type": "null"}]} if value.get("nullable") else result
 
     result = convert(definitions[name])

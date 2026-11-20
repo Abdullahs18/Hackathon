@@ -56,9 +56,6 @@ jobs:
           POSTGRES_PASSWORD: ci-only-password
           DASTAK_JWT_SECRET: ci-only-secret-with-at-least-32-characters
           DASTAK_DEMO_PASSWORD: ci-only-demo-password
-        run: >-
-          docker compose run --rm --no-deps api python -c
-          "import os; from pathlib import Path; from app.evidence_storage import EvidenceStore;
-          assert os.getuid() == 10001; s=EvidenceStore(Path('storage/evidence')); s.check();
-          import hashlib; k='0'*32+'.blob'; s.write(k,b'synthetic');
-          assert s.read(k,9,hashlib.sha256(b'synthetic').hexdigest()) == b'synthetic'; s.remove(k)"
+        run: |
+          docker compose run --rm --no-deps api python -c "import os; from pathlib import Path; from app.evidence_storage import EvidenceStore; assert os.getuid() == 10001; s=EvidenceStore(Path('storage/evidence')); s.check(); s.write('0'*32+'.blob',b'synthetic')"
+          docker compose run --rm --no-deps api python -c "import os, hashlib; from pathlib import Path; from app.evidence_storage import EvidenceStore; assert os.getuid() == 10001; s=EvidenceStore(Path('storage/evidence')); k='0'*32+'.blob'; assert s.read(k,9,hashlib.sha256(b'synthetic').hexdigest()) == b'synthetic'; s.remove(k)"

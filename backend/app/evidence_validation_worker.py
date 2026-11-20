@@ -24,6 +24,8 @@ def inspect_pdf(data: bytes) -> str:
     if reader.is_encrypted or not 1 <= len(reader.pages) <= MAX_PDF_PAGES:
         raise ValueError("PDF limits")
     blocked = {
+        "/A",  # Reject all PDF actions, including action types unknown to this parser policy.
+        "/AF",
         "/OpenAction",
         "/AA",
         "/JavaScript",
@@ -56,12 +58,17 @@ def inspect_pdf(data: bytes) -> str:
                 continue
             objects.add(id(value))
         if isinstance(value, DictionaryObject):
-            if blocked.intersection(value) or value.get("/S") in (
-                "/JavaScript",
-                "/Launch",
-                "/GoToR",
-                "/SubmitForm",
-                "/ImportData",
+            if (
+                blocked.intersection(value)
+                or value.get("/Subtype") in ("/Widget", "/RichMedia", "/Movie", "/Sound", "/Screen")
+                or value.get("/S")
+                in (
+                    "/JavaScript",
+                    "/Launch",
+                    "/GoToR",
+                    "/SubmitForm",
+                    "/ImportData",
+                )
             ):
                 raise ValueError("Interactive PDF")
             stack.extend((item, depth + 1) for item in value.values())

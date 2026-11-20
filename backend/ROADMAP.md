@@ -10,7 +10,7 @@ are implemented; the end-to-end MVP remains in progress. Work only on `be`.
 | Complaints and access | Complaint lifecycle, draft create/read/patch/list, helper grants, assignments, access policies | Ownership, active grants, officer assignment and cross-workspace raw API denial | Drafts, grants, assignment and read/write access gates implemented; officer decisions and later lifecycle transitions remain pending. See CASE_ACCESS.md. |
 | Evidence | Private image/PDF originals, content/type/size validation, SHA-256 metadata, protected retrieval | Invalid file content, unauthorized reads, hash preservation | Implemented with canonical retrieval extensions; see EVIDENCE.md. Frontend contract review/integration pending. |
 | Consent foundations | Recipient/purpose/data scopes, view/grant/change/withdraw, current authorization checks | Immediate withdrawal blocks helper/recipient/evidence reads; Admin has no bypass | Implemented for current case reads/writes and assignment; evidence/mock-service/agent checks extend these gates when those features are built. |
-| AI flow | Voice interfaces, extraction, classification, readiness, follow-ups, formal draft | Structured-output errors, unknown values, thresholds, contradiction/duplicate hard stops | Pending |
+| AI flow | Voice interfaces, extraction, classification, readiness, follow-ups, formal draft | Structured-output errors, unknown values, thresholds, contradiction/duplicate hard stops | Saved-case text assessment/extraction preview, classification, preliminary readiness, Urdu follow-ups and protected persistence implemented. Routing unavailable forces human review; integrated voice and route-aware complaint generation pending. See CASE_ANALYSIS.md. |
 | Routing | DB rules, immutable versions, deterministic evaluation, Admin edit endpoints | New cases follow updated rules, old cases retain pinned versions, no-match handoff | Pending |
 | Agent and mock services | Persisted LangGraph transitions, allowlisted typed tools, identity/payment/requirements fixtures, authorization gate, submission/confirmation | No submission without citizen approval/current consent, atomic idempotency, conflict and uncertain-timeout recovery | Pending |
 | Completion | Officer actions and legal transitions, notifications, scoped API keys, audit/agent inspection, safe draft retries | Expired/revoked keys, least privilege, notification ownership/current consent, historical trace, connection recovery | Pending |
@@ -22,6 +22,7 @@ are implemented; the end-to-end MVP remains in progress. Work only on `be`.
 - Modular monolith; React frontend is a separate workstream.
 - API keys must be hashed, scoped, expiring and revocable, and bound to a principal.
 - No LLM permission or unrestricted submission decisions. Never infer citizen authorization.
+- Later extension approved: bounded source-backed RAG after the core reporting flow works; retain deterministic routing and filing permissions. Prepare the full dataset/knowledge collection on a separate branch from current be; small feature fixtures stay with tests.
 - Keep original evidence private and label it not authenticity-verified; no OCR or forgery detection.
 - Reconcile stored agent state against current consent before every sensitive action.
 - Readiness: 0.35 classification + 0.30 completeness + 0.20 consistency + 0.15 route match.

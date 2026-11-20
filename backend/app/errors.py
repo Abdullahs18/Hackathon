@@ -13,6 +13,7 @@ ERROR_NAMES = {
     412: "precondition_failed",
     413: "payload_too_large",
     429: "rate_limited",
+    502: "invalid_provider_output",
     503: "unavailable",
 }
 
