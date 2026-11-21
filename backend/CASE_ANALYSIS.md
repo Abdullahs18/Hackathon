@@ -118,7 +118,7 @@ CLI provider proof and the saved-case API Gemini assessment worked locally. The 
 demo has subsequently passed according to the user's live check.
 
 Explicit final authorization and the durable LangGraph/mock submission flow are now implemented;
-see SUBMISSION.md. Still pending: integrated voice/audio endpoints and playback, officer decisions,
-notifications, API keys, complete audit browsing, frontend
+see SUBMISSION.md. Officer decisions and notifications are implemented; see OFFICER_REVIEW.md.
+Still pending: integrated voice/audio endpoints and playback, API keys, complete audit browsing, frontend
 integration checkpoints and pinned mock-server validation. RAG remains a bounded extension after
 the core reporting flow works; the full dataset/knowledge collection will use a separate branch.

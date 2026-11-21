@@ -107,6 +107,7 @@ def case_view(
         "version": case.version,
         "created_at": timestamp(case.created_at),
         "updated_at": timestamp(case.updated_at),
+        "review_outcome": case.review_outcome or "pending",
         "incident_data": {
             k: v
             for k, v in case.incident_data.items()

@@ -48,8 +48,11 @@ Explicit citizen approval, scoped simulated services, a fixed LangGraph workflow
 progress and idempotent simulated filing/confirmation are implemented in migration 0006. Follow
 [backend/SUBMISSION.md](backend/SUBMISSION.md) for the update commands, consent bodies, approval,
 submission, retries and withdrawal checks. [The submission review](backend/ITERATION_5_REVIEW.md)
-records the persistence and verification boundaries. The full integrated voice flow, officer
-decisions, notifications, API keys and complete audit browsing remain to be implemented.
+records the persistence and verification boundaries. Officer decisions, legal review outcomes,
+citizen clarification replies and persisted in-app notifications are implemented in migration 0007.
+Follow [backend/OFFICER_REVIEW.md](backend/OFFICER_REVIEW.md) for assignment, decision/reply headers,
+the transition table and withdrawal checks. The full integrated voice flow, API keys and complete
+Admin audit browsing remain to be implemented.
 See [backend/ROADMAP.md](backend/ROADMAP.md).
 
 The latest foundation review, plan gaps, confirmed provider choices and Windows/Docker manual

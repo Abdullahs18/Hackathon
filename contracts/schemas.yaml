@@ -19,10 +19,9 @@ components:
       - incident_data.suspect_details
       - incident_data.citizen_confirmed_corrections
       - identity_reference
-      description: case_status shares the case envelope. incident_data shares incident
-        fields except evidence_ids; evidence shares evidence IDs/access. Individual
-        incident_data.field scopes narrow incident sharing. These are data scopes,
-        separate from API-key scopes.
+      description: case_status shares the case envelope. incident_data shares incident fields except evidence_ids;
+        evidence shares evidence IDs/access. Individual incident_data.field scopes narrow incident sharing.
+        These are data scopes, separate from API-key scopes.
     ConsentPurpose:
       type: string
       enum:
@@ -31,9 +30,8 @@ components:
       - mock_identity_check
       - mock_payment_lookup
       - mock_requirements_lookup
-      description: helper_assistance uses user:<helper_id>; complaint_submission uses
-        workspace:<id>. Mock purposes use service:mock-identity, service:mock-payment
-        and service:mock-data respectively.
+      description: helper_assistance uses user:<helper_id>; complaint_submission uses workspace:<id>.
+        Mock purposes use service:mock-identity, service:mock-payment and service:mock-data respectively.
     HelperGrantCreate:
       type: object
       additionalProperties: false
@@ -56,10 +54,9 @@ components:
           maxLength: 100
     VoiceExtraction:
       type: object
-      description: Unconfirmed extracted incident suggestions, a plain Urdu summary
-        and uncertainties. Used by the provider proof and persisted saved-case assessment.
-        Validate and obtain citizen corrections before applying suggestions; never
-        grants consent or filing authority.
+      description: Unconfirmed extracted incident suggestions, a plain Urdu summary and uncertainties.
+        Used by the provider proof and persisted saved-case assessment. Validate and obtain citizen corrections
+        before applying suggestions; never grants consent or filing authority.
       additionalProperties: false
       required:
       - incident_data
@@ -165,8 +162,7 @@ components:
             type: string
       x-pydantic-source: "from pydantic import BaseModel, Field\n\nclass ClassificationResult(BaseModel):\n\
         \    incident_type: str\n    confidence: float = Field(ge=0, le=1)\n    suspicious_indicators:\
-        \ list[str]\n    explanation: str\n    missing_fields: list[str]\n    contradiction_flags:\
-        \ list[str]\n"
+        \ list[str]\n    explanation: str\n    missing_fields: list[str]\n    contradiction_flags: list[str]\n"
     ComplaintDraft:
       type: object
       additionalProperties: false
@@ -212,15 +208,14 @@ components:
             type: string
         citizen_confirmed:
           type: boolean
-      x-pydantic-source: "from pydantic import BaseModel\n\nclass ComplaintDraft(BaseModel):\n\
-        \    incident_type: str\n    incident_date: str | None\n    description: str\n\
-        \    amount: float | None\n    currency: str | None\n    payment_method: str\
-        \ | None\n    transaction_reference: str | None\n    suspect_details: list[str]\n\
-        \    evidence_ids: list[str]\n    citizen_confirmed: bool\n"
+      x-pydantic-source: "from pydantic import BaseModel\n\nclass ComplaintDraft(BaseModel):\n    incident_type:\
+        \ str\n    incident_date: str | None\n    description: str\n    amount: float | None\n    currency:\
+        \ str | None\n    payment_method: str | None\n    transaction_reference: str | None\n    suspect_details:\
+        \ list[str]\n    evidence_ids: list[str]\n    citizen_confirmed: bool\n"
     IncidentInformation:
       type: object
-      description: Partial incident record. Omit uncollected fields. Use null for
-        unknown values. An approximate date may be supplied as text.
+      description: Partial incident record. Omit uncollected fields. Use null for unknown values. An approximate
+        date may be supplied as text.
       additionalProperties: false
       properties:
         incident_type:
@@ -283,8 +278,7 @@ components:
           nullable: true
     HelperInformation:
       type: object
-      description: Information supplied under an active grant. Only the citizen can
-        confirm corrections.
+      description: Information supplied under an active grant. Only the citizen can confirm corrections.
       additionalProperties: false
       properties:
         incident_type:
@@ -371,8 +365,8 @@ components:
           type: string
     complaints:
       type: object
-      description: citizen_id references users.user_id. Routing sets destination_workspace_id
-        and pins the immutable rule_version_id. Both are null before a route is selected.
+      description: citizen_id references users.user_id. Routing sets destination_workspace_id and pins
+        the immutable rule_version_id. Both are null before a route is selected.
       additionalProperties: false
       required:
       - complaint_id
@@ -385,8 +379,8 @@ components:
         version:
           type: integer
           minimum: 1
-          description: Saved complaint revision for incident changes and analysis/status
-            updates; returned as a quoted ETag.
+          description: Saved complaint revision for incident changes and analysis/status updates; returned
+            as a quoted ETag.
         created_at:
           type: string
           format: date-time
@@ -412,8 +406,8 @@ components:
         incident_type:
           type: string
           nullable: true
-          description: Duplicates incident_data.incident_type so routing queries can
-            filter a plain column without querying the JSON record.
+          description: Duplicates incident_data.incident_type so routing queries can filter a plain column
+            without querying the JSON record.
         incident_data:
           $ref: '#/components/schemas/IncidentInformation'
         complaint_draft:
@@ -427,6 +421,8 @@ components:
         submission_reference:
           type: string
           nullable: true
+        review_outcome:
+          $ref: '#/components/schemas/ReviewOutcome'
     complaint_access_grants:
       type: object
       additionalProperties: false
@@ -463,8 +459,8 @@ components:
           minLength: 1
     evidence:
       type: object
-      description: Citizen-submitted original; not authenticity-verified. This metadata
-        never contains a public URL or private storage path.
+      description: Citizen-submitted original; not authenticity-verified. This metadata never contains
+        a public URL or private storage path.
       additionalProperties: false
       required:
       - evidence_id
@@ -523,8 +519,7 @@ components:
           type: string
           minLength: 1
           maxLength: 150
-          description: user:<helper_user_id> for helper_assistance; workspace:<workspace_id>
-            for complaint_submission.
+          description: user:<helper_user_id> for helper_assistance; workspace:<workspace_id> for complaint_submission.
         purpose:
           $ref: '#/components/schemas/ConsentPurpose'
         data_scopes:
@@ -541,8 +536,7 @@ components:
           type: string
           minLength: 1
           maxLength: 150
-          description: user:<helper_user_id> for helper_assistance; workspace:<workspace_id>
-            for complaint_submission.
+          description: user:<helper_user_id> for helper_assistance; workspace:<workspace_id> for complaint_submission.
         purpose:
           $ref: '#/components/schemas/ConsentPurpose'
         data_scopes:
@@ -580,8 +574,7 @@ components:
           type: string
           minLength: 1
           maxLength: 150
-          description: user:<helper_user_id> for helper_assistance; workspace:<workspace_id>
-            for complaint_submission.
+          description: user:<helper_user_id> for helper_assistance; workspace:<workspace_id> for complaint_submission.
         purpose:
           $ref: '#/components/schemas/ConsentPurpose'
         data_scopes:
@@ -628,8 +621,8 @@ components:
           - impersonation
           - fraudulent transfer
           - other suspected online financial fraud
-          description: Supported subtype within the one suspected-online-financial-fraud
-            workflow. Exact classifier-label match.
+          description: Supported subtype within the one suspected-online-financial-fraud workflow. Exact
+            classifier-label match.
         destination_workspace_id:
           type: string
           minLength: 1
@@ -665,8 +658,8 @@ components:
         incident_type:
           type: string
           enum: *id001
-          description: Supported subtype within the one suspected-online-financial-fraud
-            workflow. Exact classifier-label match.
+          description: Supported subtype within the one suspected-online-financial-fraud workflow. Exact
+            classifier-label match.
         destination_workspace_id:
           type: string
           minLength: 1
@@ -737,8 +730,7 @@ components:
           format: date-time
     routing_rules:
       type: object
-      description: Current definition and its active version identifier. Edits create
-        immutable snapshots.
+      description: Current definition and its active version identifier. Edits create immutable snapshots.
       additionalProperties: false
       required:
       - rule_id
@@ -971,8 +963,7 @@ components:
           $ref: '#/components/schemas/ComplaintDraft'
     audit_logs:
       type: object
-      description: Append-only summary. Access to trace details follows the underlying
-        data permissions.
+      description: Append-only summary. Access to trace details follows the underlying data permissions.
       additionalProperties: false
       required:
       - audit_log_id
@@ -1215,9 +1206,8 @@ components:
           type: boolean
           enum:
           - true
-      description: Simulated field-name requirements, not official reporting guidance.
-        Values must be allowlisted IncidentInformation field names; no executable
-        instructions.
+      description: Simulated field-name requirements, not official reporting guidance. Values must be
+        allowlisted IncidentInformation field names; no executable instructions.
     Login:
       type: object
       additionalProperties: false
@@ -1279,6 +1269,7 @@ components:
         reason:
           type: string
           minLength: 1
+          maxLength: 4000
     AuthorizeSubmission:
       type: object
       additionalProperties: false
@@ -1298,9 +1289,9 @@ components:
         reviewed_version:
           type: integer
           minimum: 1
-      description: Owning Citizen explicitly confirms and authorizes the exact reviewed
-        revision. Separate from consent grants. A changed review, route, authorization
-        or relevant consent requires renewed review/authorization.
+      description: Owning Citizen explicitly confirms and authorizes the exact reviewed revision. Separate
+        from consent grants. A changed review, route, authorization or relevant consent requires renewed
+        review/authorization.
     Analysis:
       type: object
       additionalProperties: false
@@ -1363,14 +1354,13 @@ components:
           - routing-v1
         complaint_draft:
           $ref: '#/components/schemas/ComplaintDraft'
-      description: Persisted owner-only assessment for an exact saved revision. Deterministic
-        routing pins an immutable rule version. Readiness and review drafts never
-        grant consent or authorize submission.
+      description: Persisted owner-only assessment for an exact saved revision. Deterministic routing
+        pins an immutable rule version. Readiness and review drafts never grant consent or authorize submission.
     EvidenceUpload:
       type: object
-      description: Exactly one file field. Original PNG, JPEG, WebP or static unencrypted
-        PDF, at most 10 MiB. Filenames, declared MIME, decoded content and resource
-        limits are checked. No OCR or authenticity claim.
+      description: Exactly one file field. Original PNG, JPEG, WebP or static unencrypted PDF, at most
+        10 MiB. Filenames, declared MIME, decoded content and resource limits are checked. No OCR or authenticity
+        claim.
       additionalProperties: false
       required:
       - file
@@ -1391,8 +1381,8 @@ components:
           type: string
     IncidentPatch:
       type: object
-      description: Partial incident record. Omit uncollected fields. Use null for
-        unknown values. An approximate date may be supplied as text.
+      description: Partial incident record. Omit uncollected fields. Use null for unknown values. An approximate
+        date may be supplied as text.
       additionalProperties: false
       properties:
         incident_type:
@@ -1464,9 +1454,8 @@ components:
           type: boolean
           enum:
           - true
-          description: Explicit permission for this saved case version to be sent
-            to Gemini. No evidence bytes, credentials or identity records are sent.
-            This is not submission authorization.
+          description: Explicit permission for this saved case version to be sent to Gemini. No evidence
+            bytes, credentials or identity records are sent. This is not submission authorization.
     CaseAssessment:
       type: object
       additionalProperties: false
@@ -1478,9 +1467,8 @@ components:
           $ref: '#/components/schemas/VoiceExtraction'
         classification:
           $ref: '#/components/schemas/ClassificationResult'
-      description: Validated provider assessment of untrusted saved incident data.
-        Extraction is an unconfirmed suggestion; never overwrites saved citizen facts
-        or authorizes filing.
+      description: Validated provider assessment of untrusted saved incident data. Extraction is an unconfirmed
+        suggestion; never overwrites saved citizen facts or authorizes filing.
     RouteDecision:
       type: object
       nullable: true
@@ -1508,8 +1496,8 @@ components:
           type: string
         justification:
           type: string
-      description: Immutable demo rule used for this assessment, or null when no valid
-        route can be used. No real government filing or authority endorsement.
+      description: Immutable demo rule used for this assessment, or null when no valid route can be used.
+        No real government filing or authority endorsement.
     ExecuteSubmission:
       type: object
       additionalProperties: false
@@ -1584,3 +1572,70 @@ components:
           type: string
           format: date-time
           nullable: true
+    ReviewOutcome:
+      type: string
+      enum:
+      - pending
+      - information_requested
+      - information_received
+      - accepted
+      - rejected
+      - escalated
+      - closed
+    ReviewReply:
+      type: object
+      additionalProperties: false
+      required:
+      - message
+      - allow_recipient_sharing
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        allow_recipient_sharing:
+          type: boolean
+          enum:
+          - true
+    ReviewEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - event_id
+      - complaint_id
+      - actor_id
+      - action
+      - message
+      - previous_outcome
+      - outcome
+      - complaint_version
+      - timestamp
+      properties:
+        event_id:
+          type: string
+        complaint_id:
+          type: string
+        actor_id:
+          type: string
+        action:
+          type: string
+          enum:
+          - request_information
+          - accept
+          - reject
+          - escalate
+          - close
+          - provide_information
+        message:
+          type: string
+          maxLength: 4000
+        previous_outcome:
+          $ref: '#/components/schemas/ReviewOutcome'
+        outcome:
+          $ref: '#/components/schemas/ReviewOutcome'
+        complaint_version:
+          type: integer
+          minimum: 1
+        timestamp:
+          type: string
+          format: date-time

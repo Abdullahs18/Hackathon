@@ -128,7 +128,8 @@ use **Authorize** with the returned access token. Log in again if an expired tok
   it does not disclose data or issue another recipient request. This local verification may
   finish after withdrawal. A new mock recipient read still requires current consent.
 - A receipt cannot be undone by revoking approval: this returns 409 even when local verification
-  has not yet finished. Before any filing, explicit revocation returns the case to DRAFT.
+  has not yet finished. Revoking an active unfiled approval returns the case to DRAFT. A run
+  already stopped for information/human review can be corrected and analyzed again.
 
 ## Implementation and access boundaries
 
@@ -158,6 +159,7 @@ it cannot skip identity, requirements or authorization checks. Its first creatio
 replay returns 200, and its draft must exactly equal the citizen-approved draft.
 
 New public contract fields/endpoints ship with schema tests. Frontend/test-owner review and the
-mock-server/integration checkpoints remain required. Full case-integrated voice, officer actions,
-notifications, API keys and complete Admin audit/agent inspection are later increments.
+mock-server/integration checkpoints remain required. Officer actions and notifications are now
+implemented; see OFFICER_REVIEW.md. Full case-integrated voice, API keys and complete Admin
+audit/agent inspection remain later increments.
 Source-backed RAG/full dataset collection remain the approved follow-on after the core workflow.

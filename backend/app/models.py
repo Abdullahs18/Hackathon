@@ -77,6 +77,7 @@ class Complaint(Base):
     authorization_id: Mapped[str | None] = mapped_column(String(36))
     agent_run_id: Mapped[str | None] = mapped_column(String(36))
     submission_reference: Mapped[str | None] = mapped_column(String(100))
+    review_outcome: Mapped[str | None] = mapped_column(String(32))
 
 
 class AccessGrant(Base):
@@ -291,3 +292,34 @@ class Evidence(Base):
     storage_key: Mapped[str] = mapped_column(String(40), unique=True)
     idempotency_key: Mapped[str | None] = mapped_column(String(128))
     request_fingerprint: Mapped[str | None] = mapped_column(String(64))
+
+
+class ReviewEvent(Base):
+    __tablename__ = "review_events"
+    __table_args__ = (
+        UniqueConstraint("actor_id", "idempotency_key", name="uq_review_command"),
+        UniqueConstraint("complaint_id", "complaint_version", name="uq_review_revision"),
+    )
+    event_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.complaint_id"), index=True)
+    actor_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    action: Mapped[str] = mapped_column(String(32))
+    message: Mapped[str] = mapped_column(Text)
+    previous_outcome: Mapped[str] = mapped_column(String(32))
+    outcome: Mapped[str] = mapped_column(String(32))
+    complaint_version: Mapped[int]
+    idempotency_key: Mapped[str] = mapped_column(String(128))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    __table_args__ = (UniqueConstraint("user_id", "event_key", name="uq_notification_event"),)
+    notification_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"), index=True)
+    complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.complaint_id"), index=True)
+    event_key: Mapped[str] = mapped_column(String(160))
+    message: Mapped[str] = mapped_column(Text)
+    read: Mapped[bool] = mapped_column(Boolean, default=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))

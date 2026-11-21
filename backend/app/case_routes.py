@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Header, HTTPException, Response
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.audit import record_event
@@ -25,6 +25,7 @@ from app.case_policy import (
     timestamp,
 )
 from app.models import AccessGrant, CaseAssignment, Complaint, Consent, User, Workspace
+from app.notifications import notify_case
 from app.security import AdminUser, CurrentUser, SessionDep
 from app.validation import validate_payload
 
@@ -39,6 +40,11 @@ def commit(session: Session) -> None:
     except IntegrityError:
         session.rollback()
         raise HTTPException(409, "Request conflicts with current records.") from None
+    except SQLAlchemyError:
+        session.rollback()
+        raise HTTPException(
+            503, "Save outcome is uncertain. Recover current records before retrying."
+        ) from None
 
 
 def consent_view(record: Consent) -> dict:
@@ -292,7 +298,7 @@ def list_consents(id: str, user: CurrentUser, session: SessionDep):
     "/complaints/{id}/consents", operation_id="grantConsent", tags=["Consent"], status_code=201
 )
 def grant_consent(id: str, body: dict, user: CurrentUser, session: SessionDep):
-    own_case(session, user, id)
+    case = own_case(session, user, id)
     validate_payload("ConsentGrant", body)
     validate_recipient(session, body["recipient"], body["purpose"])
     record = Consent(
@@ -316,8 +322,15 @@ def grant_consent(id: str, body: dict, user: CurrentUser, session: SessionDep):
         complaint_id=id,
         details={"consent_id": record.consent_id, **body},
     )
+    notify_case(
+        session,
+        case,
+        "consent:" + record.consent_id + ":granted",
+        "Sharing consent for this case was granted.",
+    )
+    result = consent_view(record)
     commit(session)
-    return consent_view(record)
+    return result
 
 
 def owned_consent(session, user, consent_id):
@@ -333,6 +346,7 @@ def owned_consent(session, user, consent_id):
 @router.patch("/consents/{id}", operation_id="changeConsent", tags=["Consent"])
 def change_consent(id: str, body: dict, user: CurrentUser, session: SessionDep):
     record = owned_consent(session, user, id)
+    case = locked_case(session, record.complaint_id)
     validate_payload("ConsentChange", body)
     if record.status != "granted":
         raise HTTPException(409, "Withdrawn consent cannot be changed. Create a new grant.")
@@ -340,6 +354,8 @@ def change_consent(id: str, body: dict, user: CurrentUser, session: SessionDep):
         session, body.get("recipient", record.recipient), body.get("purpose", record.purpose)
     )
     before = {k: getattr(record, k) for k in ("recipient", "purpose", "data_scopes")}
+    if all(before[k] == v for k, v in body.items()):
+        return consent_view(record)
     for key, value in body.items():
         setattr(record, key, value)
     record.changed_at = datetime.now(UTC)
@@ -351,13 +367,21 @@ def change_consent(id: str, body: dict, user: CurrentUser, session: SessionDep):
         complaint_id=record.complaint_id,
         details={"consent_id": id, "before": before, "change": body},
     )
+    notify_case(
+        session,
+        case,
+        "consent:" + id + ":" + record.changed_at.isoformat(),
+        "Sharing consent for this case changed.",
+    )
+    result = consent_view(record)
     commit(session)
-    return consent_view(record)
+    return result
 
 
 @router.post("/consents/{id}/withdraw", operation_id="withdrawConsent", tags=["Consent"])
 def withdraw_consent(id: str, user: CurrentUser, session: SessionDep):
     record = owned_consent(session, user, id)
+    case = locked_case(session, record.complaint_id)
     if record.status != "withdrawn":
         record.status = "withdrawn"
         record.withdrawn_at = record.changed_at = datetime.now(UTC)
@@ -374,8 +398,15 @@ def withdraw_consent(id: str, user: CurrentUser, session: SessionDep):
                 "data_scopes": record.data_scopes,
             },
         )
+        notify_case(
+            session,
+            case,
+            "consent:" + id + ":withdrawn",
+            "Sharing consent for this case was withdrawn; future recipient access is blocked.",
+        )
+    result = consent_view(record)
     commit(session)
-    return consent_view(record)
+    return result
 
 
 @router.get("/helper/complaints", operation_id="listHelperComplaints", tags=["Helper"])
@@ -492,6 +523,16 @@ def assign_officer(id: str, body: dict, admin: AdminUser, session: SessionDep):
     if "case_status" not in scopes:
         raise HTTPException(403, "Current recipient consent is required for assignment.")
     assignment = session.get(CaseAssignment, id)
+    if (
+        assignment is not None
+        and assignment.officer_id == officer.user_id
+        and assignment.workspace_id == officer.workspace_id
+    ):
+        return {
+            "complaint_id": id,
+            "officer_id": assignment.officer_id,
+            "workspace_id": assignment.workspace_id,
+        }
     if assignment is None:
         assignment = CaseAssignment(
             complaint_id=id, officer_id=officer.user_id, workspace_id=officer.workspace_id
@@ -508,9 +549,16 @@ def assign_officer(id: str, body: dict, admin: AdminUser, session: SessionDep):
         complaint_id=id,
         details={"officer_id": officer.user_id, "workspace_id": officer.workspace_id},
     )
-    commit(session)
-    return {
+    notify_case(
+        session,
+        case,
+        "assignment:" + str(uuid4()),
+        "An officer was assigned to this simulated complaint.",
+    )
+    result = {
         "complaint_id": id,
         "officer_id": assignment.officer_id,
         "workspace_id": assignment.workspace_id,
     }
+    commit(session)
+    return result

@@ -24,6 +24,7 @@ from app.models import (
     SubmissionAuthorization,
     User,
 )
+from app.notifications import notify_case
 from app.submission_policy import check_binding, require_approval
 from app.validation import validate_schema
 
@@ -241,6 +242,20 @@ def perform_step(engine, store, run_id, actor_id, token, step):
             raise HTTPException(409, "Agent step is not allowlisted.")
         if run.next_step != "blocked":
             checkpoint(case, approval, run, state, next_step, status)
+        if run.next_step == "done":
+            notify_case(
+                session,
+                case,
+                "submission:" + run_id,
+                "Your simulated complaint was submitted and its receipt was confirmed.",
+            )
+        elif run.next_step == "blocked":
+            notify_case(
+                session,
+                case,
+                "agent-blocked:" + run_id,
+                "This simulated complaint needs clarification or human review before filing.",
+            )
         result = {**result, "checkpoint_status": run.state["current_status"]}
         session.add(
             AgentToolCall(

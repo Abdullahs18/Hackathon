@@ -2,35 +2,29 @@ openapi: 3.0.3
 info:
   title: Dastak REST API
   version: 1.0.0
-  description: Synthetic demo data and simulated services only. Each protected operation
-    accepts a frontend JWT or a scoped external API key bound to an authorized principal.
-    Keys must be unexpired and unrevoked. API key scopes are grouped by resource area.
-    Every request enforces role, resource, workspace and current consent checks as
-    applicable.
+  description: Synthetic demo data and simulated services only. Each protected operation accepts a frontend
+    JWT or a scoped external API key bound to an authorized principal. Keys must be unexpired and unrevoked.
+    API key scopes are grouped by resource area. Every request enforces role, resource, workspace and
+    current consent checks as applicable.
 tags:
 - name: Health
-  description: Check process liveness and database readiness. No user or case data
-    is returned.
+  description: Check process liveness and database readiness. No user or case data is returned.
 - name: Authentication
   description: Sign in and view the current account.
 - name: Citizen complaints
-  description: Create, update and track complaints, attach evidence and authorize
-    submission.
+  description: Create, update and track complaints, attach evidence and authorize submission.
 - name: Consent
   description: View, grant, change and withdraw consent to share complaint data.
 - name: Evidence
-  description: Upload original supporting files and retrieve them with current case
-    permission and consent.
+  description: Upload original supporting files and retrieve them with current case permission and consent.
 - name: Helper
   description: Track and add information to cases covered by an active helper grant.
 - name: Officer
   description: Review assigned complaints and record decisions.
 - name: Admin
-  description: Manage users, routing rules and API keys, and inspect audit records
-    and agent runs.
+  description: Manage users, routing rules and API keys, and inspect audit records and agent runs.
 - name: Mock services
-  description: Look up simulated records and reporting requirements, submit complaints
-    and check confirmations.
+  description: Look up simulated records and reporting requirements, submit complaints and check confirmations.
 - name: Notifications
   description: List personal notifications and mark them as read.
 security:
@@ -46,8 +40,8 @@ paths:
       - Helper
       operationId: listHelperGrants
       summary: List helper grants
-      description: Citizen owner only. A grant alone does not authorize sharing; current
-        consent is also required.
+      description: Citizen owner only. A grant alone does not authorize sharing; current consent is also
+        required.
       responses:
         '200':
           description: Success.
@@ -70,8 +64,8 @@ paths:
       - Helper
       operationId: grantHelperAccess
       summary: Grant case-specific helper access
-      description: Citizen owner only. Creates or explicitly reactivates a helper
-        grant. Existing grants return 200. Consent is a separate required gate.
+      description: Citizen owner only. Creates or explicitly reactivates a helper grant. Existing grants
+        return 200. Consent is a separate required gate.
       responses:
         '201':
           description: Success.
@@ -93,6 +87,8 @@ paths:
             application/json:
               schema:
                 $ref: ./schemas.yaml#/components/schemas/complaint_access_grants
+        '503':
+          $ref: '#/components/responses/Error'
       requestBody:
         required: true
         content:
@@ -113,8 +109,8 @@ paths:
       - Helper
       operationId: revokeHelperAccess
       summary: Revoke helper access
-      description: Citizen owner only. Idempotently blocks future helper access even
-        if consent remains granted.
+      description: Citizen owner only. Idempotently blocks future helper access even if consent remains
+        granted.
       responses:
         '200':
           description: Success.
@@ -130,6 +126,8 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
   /api/v1/admin/complaints/{id}/assignment:
     parameters: *id002
     post:
@@ -137,10 +135,9 @@ paths:
       - Admin
       operationId: assignOfficer
       summary: Assign an officer to a submitted case
-      description: 'Admin. Requires an already submitted/reviewing case, pinned route,
-        active officer in the routed workspace, and current workspace consent. Returns
-        assignment metadata only; conveys no access to incident data. API-key scope:
-        admin:cases.'
+      description: 'Admin. Requires an already submitted/reviewing case, pinned route, active officer
+        in the routed workspace, and current workspace consent. Returns assignment metadata only; conveys
+        no access to incident data. API-key scope: admin:cases.'
       responses:
         '200':
           description: Success.
@@ -157,6 +154,8 @@ paths:
         '404':
           $ref: '#/components/responses/Error'
         '409':
+          $ref: '#/components/responses/Error'
+        '503':
           $ref: '#/components/responses/Error'
       requestBody:
         required: true
@@ -200,8 +199,7 @@ paths:
       - Authentication
       operationId: login
       summary: Authenticate
-      description: Public login for Citizen, Helper, Officer and Admin using their
-        own credentials.
+      description: Public login for Citizen, Helper, Officer and Admin using their own credentials.
       security: []
       requestBody:
         required: true
@@ -254,9 +252,9 @@ paths:
       - Citizen complaints
       operationId: createComplaint
       summary: Create a complaint draft
-      description: Citizen. The authenticated citizen owns the new draft. Optional
-        Idempotency-Key prevents duplicate draft creation on retries. Identical replay
-        returns the current draft with 200; conflicting reuse returns 409.
+      description: Citizen. The authenticated citizen owns the new draft. Optional Idempotency-Key prevents
+        duplicate draft creation on retries. Identical replay returns the current draft with 200; conflicting
+        reuse returns 409.
       requestBody:
         required: true
         content:
@@ -294,12 +292,14 @@ paths:
                 type: string
         '409':
           $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
       parameters:
       - name: Idempotency-Key
         in: header
         required: false
-        description: Use one opaque key for retries of the same citizen's draft creation.
-          A different payload with the same key conflicts.
+        description: Use one opaque key for retries of the same citizen's draft creation. A different
+          payload with the same key conflicts.
         schema:
           type: string
           minLength: 1
@@ -331,8 +331,8 @@ paths:
       - Citizen complaints
       operationId: getComplaint
       summary: Read a complaint
-      description: Citizen who owns the case or Helper with a specific active grant
-        and applicable consent. Return only information the caller may read.
+      description: Citizen who owns the case or Helper with a specific active grant and applicable consent.
+        Return only information the caller may read.
       responses:
         '200':
           description: Success.
@@ -358,9 +358,9 @@ paths:
       - Citizen complaints
       operationId: updateComplaint
       summary: Correct or complete a draft
-      description: Citizen who owns the case. Omitted fields remain unchanged. Explicit
-        null records an unknown value. Citizen edits in HUMAN_REVIEW may correct facts
-        and return the case to DRAFT; they do not resolve review or authorize submission.
+      description: Citizen who owns the case. Omitted fields remain unchanged. Explicit null records an
+        unknown value. Citizen edits in HUMAN_REVIEW may correct facts and return the case to DRAFT; they
+        do not resolve review or authorize submission.
       requestBody:
         required: true
         content:
@@ -391,13 +391,14 @@ paths:
           $ref: '#/components/responses/Error'
         '412':
           $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
       parameters:
       - name: If-Match
         in: header
         required: false
-        description: Optional quoted content version, e.g. "1". A stale version returns
-          412. On retry after an uncertain save, GET the draft and reconcile before
-          retrying.
+        description: Optional quoted content version, e.g. "1". A stale version returns 412. On retry
+          after an uncertain save, GET the draft and reconcile before retrying.
         schema:
           type: string
   /api/v1/complaints/{id}/evidence:
@@ -408,16 +409,14 @@ paths:
       - Citizen complaints
       operationId: uploadEvidence
       summary: Attach supporting evidence
-      description: Citizen owner or specifically granted Helper with current case_status
-        and evidence consent. New uploads require an editable draft. Exactly one PNG/JPEG/WebP/static
-        PDF file, at most 10 MiB, 20 megapixels or 25 PDF pages, at most 10 files
-        per case. Decode/parse original bytes with bounded resources; reject encrypted/interactive
-        PDFs. Preserve original privately, record SHA-256, invalidate generated review
-        and update draft version. No OCR or authenticity verdict. Use an Idempotency-Key
-        for safe retries; identical replay returns 200, conflicting reuse 409. Current
-        permission/consent is always rechecked, including retries. Citizen edits in
-        HUMAN_REVIEW may correct facts and return the case to DRAFT; they do not resolve
-        review or authorize submission.
+      description: Citizen owner or specifically granted Helper with current case_status and evidence
+        consent. New uploads require an editable draft. Exactly one PNG/JPEG/WebP/static PDF file, at
+        most 10 MiB, 20 megapixels or 25 PDF pages, at most 10 files per case. Decode/parse original bytes
+        with bounded resources; reject encrypted/interactive PDFs. Preserve original privately, record
+        SHA-256, invalidate generated review and update draft version. No OCR or authenticity verdict.
+        Use an Idempotency-Key for safe retries; identical replay returns 200, conflicting reuse 409.
+        Current permission/consent is always rechecked, including retries. Citizen edits in HUMAN_REVIEW
+        may correct facts and return the case to DRAFT; they do not resolve review or authorize submission.
       requestBody:
         required: true
         content:
@@ -471,8 +470,8 @@ paths:
       - name: Idempotency-Key
         in: header
         required: false
-        description: Opaque retry key bound to uploader, case, original bytes, detected
-          type and sanitized filename.
+        description: Opaque retry key bound to uploader, case, original bytes, detected type and sanitized
+          filename.
         schema:
           type: string
           minLength: 1
@@ -480,8 +479,8 @@ paths:
       - name: If-Match
         in: header
         required: false
-        description: Optional quoted complaint version, e.g. "1"; a stale new upload
-          is 412. Identical idempotent replay does not change the case.
+        description: Optional quoted complaint version, e.g. "1"; a stale new upload is 412. Identical
+          idempotent replay does not change the case.
         schema:
           type: string
     get:
@@ -489,9 +488,9 @@ paths:
       - Citizen complaints
       operationId: listEvidence
       summary: List authorized evidence metadata
-      description: Citizen owner, specifically granted Helper, or assigned Officer
-        in the matching workspace. Helper/Officer require current case_status and
-        evidence consent. Recheck every request; Admin has no bypass.
+      description: Citizen owner, specifically granted Helper, or assigned Officer in the matching workspace.
+        Helper/Officer require current case_status and evidence consent. Recheck every request; Admin
+        has no bypass.
       responses:
         '200':
           description: Authorized metadata; not authenticity-verified.
@@ -523,9 +522,9 @@ paths:
       - Citizen complaints
       operationId: getEvidence
       summary: Read authorized evidence metadata
-      description: Citizen owner, specifically granted Helper, or assigned Officer
-        in the matching workspace. Helper/Officer require current case_status and
-        evidence consent. Recheck every request; Admin has no bypass.
+      description: Citizen owner, specifically granted Helper, or assigned Officer in the matching workspace.
+        Helper/Officer require current case_status and evidence consent. Recheck every request; Admin
+        has no bypass.
       responses:
         '200':
           description: Authorized metadata; not authenticity-verified.
@@ -555,12 +554,11 @@ paths:
       - Citizen complaints
       operationId: downloadEvidence
       summary: Download an authorized original evidence file
-      description: Citizen owner, specifically granted Helper, or assigned Officer
-        in the matching workspace. Helper/Officer require current case_status and
-        evidence consent. Recheck every request; Admin has no bypass. Serve a bounded
-        byte snapshot as an attachment after verifying stored size/hash. No public
-        or reusable signed URLs; no inline evidence rendering. Already received copies
-        cannot be retracted.
+      description: Citizen owner, specifically granted Helper, or assigned Officer in the matching workspace.
+        Helper/Officer require current case_status and evidence consent. Recheck every request; Admin
+        has no bypass. Serve a bounded byte snapshot as an attachment after verifying stored size/hash.
+        No public or reusable signed URLs; no inline evidence rendering. Already received copies cannot
+        be retracted.
       responses:
         '200':
           description: Private original bytes; not authenticity-verified.
@@ -612,23 +610,19 @@ paths:
       - Citizen complaints
       operationId: analyzeComplaint
       summary: Analyze the saved incident
-      description: Owning Citizen only; explicit allow_external_processing=true is
-        required. Saved incident data is assessed by Gemini, excluding evidence IDs
-        and citizen-confirmation records; evidence bytes are never sent. Input is
-        limited to 24000 Unicode characters and needs description or scam_message.
-        Validated extraction remains an unconfirmed preview. Database rules match
-        the classifier subtype, ordered by priority then rule_id, and pin an immutable
-        version. A pinned route is preserved across rule edits; missing/invalid/mismatched
-        pins, no match, low readiness, unresolved contradictions or possible duplicates
-        force HUMAN_REVIEW. Otherwise missing required facts or readiness below 0.85
-        produce NEEDS_INFORMATION; complete cases at least 0.85 get a structured,
-        unconfirmed CITIZEN_REVIEW draft. Optional unknown dates/references are not
-        mandatory. No consent, citizen confirmation or submission is inferred. Current
-        results are cached. Unrouted results are reevaluated when the rule catalog
-        changes; validated saved assessments are reused without another provider call.
-        Provider calls release DB locks and recheck account/version before saving;
-        concurrent same-case work returns 429. Optional If-Match guards the saved
-        revision.
+      description: Owning Citizen only; explicit allow_external_processing=true is required. Saved incident
+        data is assessed by Gemini, excluding evidence IDs and citizen-confirmation records; evidence
+        bytes are never sent. Input is limited to 24000 Unicode characters and needs description or scam_message.
+        Validated extraction remains an unconfirmed preview. Database rules match the classifier subtype,
+        ordered by priority then rule_id, and pin an immutable version. A pinned route is preserved across
+        rule edits; missing/invalid/mismatched pins, no match, low readiness, unresolved contradictions
+        or possible duplicates force HUMAN_REVIEW. Otherwise missing required facts or readiness below
+        0.85 produce NEEDS_INFORMATION; complete cases at least 0.85 get a structured, unconfirmed CITIZEN_REVIEW
+        draft. Optional unknown dates/references are not mandatory. No consent, citizen confirmation or
+        submission is inferred. Current results are cached. Unrouted results are reevaluated when the
+        rule catalog changes; validated saved assessments are reused without another provider call. Provider
+        calls release DB locks and recheck account/version before saving; concurrent same-case work returns
+        429. Optional If-Match guards the saved revision.
       responses:
         '200':
           description: Success.
@@ -666,8 +660,7 @@ paths:
         required: false
         schema:
           type: string
-        description: Quoted current complaint ETag, e.g. "1". Stale requests return
-          412.
+        description: Quoted current complaint ETag, e.g. "1". Stale requests return 412.
   /api/v1/complaints/{id}/authorize-submission:
     parameters:
     - $ref: '#/components/parameters/complaint_idPath'
@@ -676,12 +669,11 @@ paths:
       - Citizen complaints
       operationId: authorizeSubmission
       summary: Authorize the reviewed complaint
-      description: Owning Citizen only. Confirm citizen_confirmed=true and citizen_authorized=true
-        for reviewed_version. Requires a current CITIZEN_REVIEW draft, valid pinned
-        route, no hard stops, and current scoped consent for the destination and each
-        required simulated service. Binds the exact payload and relevant consent snapshots.
-        Replays of the same active approval return the current case. Never files by
-        itself.
+      description: Owning Citizen only. Confirm citizen_confirmed=true and citizen_authorized=true for
+        reviewed_version. Requires a current CITIZEN_REVIEW draft, valid pinned route, no hard stops,
+        and current scoped consent for the destination and each required simulated service. Binds the
+        exact payload and relevant consent snapshots. Replays of the same active approval return the current
+        case. Never files by itself.
       requestBody:
         required: true
         content:
@@ -740,11 +732,10 @@ paths:
       - Consent
       operationId: grantConsent
       summary: Grant data-sharing consent
-      description: Citizen who owns the complaint. Derive the grantor from the authenticated
-        citizen. One active consent per complaint/recipient/purpose is allowed; duplicate
-        grants return 409. Recipient and purpose use the shared namespaced format
-        and controlled enums. case_status is required to expose the case envelope;
-        incident fields are filtered to the remaining scopes.
+      description: Citizen who owns the complaint. Derive the grantor from the authenticated citizen.
+        One active consent per complaint/recipient/purpose is allowed; duplicate grants return 409. Recipient
+        and purpose use the shared namespaced format and controlled enums. case_status is required to
+        expose the case envelope; incident fields are filtered to the remaining scopes.
       requestBody:
         required: true
         content:
@@ -768,6 +759,8 @@ paths:
           $ref: '#/components/responses/Error'
         '409':
           $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
   /api/v1/consents/{id}:
     parameters:
     - $ref: '#/components/parameters/consent_idPath'
@@ -776,8 +769,9 @@ paths:
       - Consent
       operationId: changeConsent
       summary: Change a consent record
-      description: Citizen who owns the associated complaint. Apply the changed recipient,
-        purpose or scope immediately.
+      description: Citizen who owns the associated complaint. Apply the changed recipient, purpose or
+        scope immediately. Repeating the same recipient, purpose and scopes is a no-op and does not invalidate
+        approval or issue duplicate notifications.
       requestBody:
         required: true
         content:
@@ -801,6 +795,8 @@ paths:
           $ref: '#/components/responses/Error'
         '409':
           $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
   /api/v1/consents/{id}/withdraw:
     parameters:
     - $ref: '#/components/parameters/consent_idPath'
@@ -809,8 +805,8 @@ paths:
       - Consent
       operationId: withdrawConsent
       summary: Withdraw consent
-      description: Citizen who owns the associated complaint. Block future access
-        under this consent immediately and record withdrawal.
+      description: Citizen who owns the associated complaint. Block future access under this consent immediately
+        and record withdrawal.
       responses:
         '200':
           description: Success.
@@ -826,14 +822,16 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
   /api/v1/helper/complaints:
     get:
       tags:
       - Helper
       operationId: listHelperComplaints
       summary: Track authorized complaints
-      description: Helper. Include only cases covered by a specific active grant and
-        current consent. Filter each case to the authorized data scope.
+      description: Helper. Include only cases covered by a specific active grant and current consent.
+        Filter each case to the authorized data scope.
       responses:
         '200':
           description: Success.
@@ -855,10 +853,9 @@ paths:
       - Helper
       operationId: addHelperInformation
       summary: Add information to an authorized case
-      description: Helper. Recheck the specific active grant and current consent.
-        Updates only incident information within scope. Return only authorized case
-        fields. Citizen edits in HUMAN_REVIEW may correct facts and return the case
-        to DRAFT; they do not resolve review or authorize submission.
+      description: Helper. Recheck the specific active grant and current consent. Updates only incident
+        information within scope. Return only authorized case fields. Citizen edits in HUMAN_REVIEW may
+        correct facts and return the case to DRAFT; they do not resolve review or authorize submission.
       requestBody:
         required: true
         content:
@@ -889,13 +886,14 @@ paths:
           $ref: '#/components/responses/Error'
         '412':
           $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
       parameters:
       - name: If-Match
         in: header
         required: false
-        description: Optional quoted content version, e.g. "1". A stale version returns
-          412. On retry after an uncertain save, GET the draft and reconcile before
-          retrying.
+        description: Optional quoted content version, e.g. "1". A stale version returns 412. On retry
+          after an uncertain save, GET the draft and reconcile before retrying.
         schema:
           type: string
   /api/v1/officer/complaints:
@@ -904,8 +902,8 @@ paths:
       - Officer
       operationId: listOfficerComplaints
       summary: List assigned complaints
-      description: Officer. Include only cases assigned to the caller within their
-        workspace and permitted case scope.
+      description: Officer. Include only cases assigned to the caller within their workspace and permitted
+        case scope.
       responses:
         '200':
           description: Success.
@@ -927,8 +925,8 @@ paths:
       - Officer
       operationId: getOfficerComplaint
       summary: Review an assigned complaint
-      description: Officer. Requires assignment, matching workspace and permitted
-        case scope. Evidence access also requires current authorization.
+      description: Officer. Requires assignment, matching workspace and permitted case scope. Evidence
+        access also requires current authorization.
       responses:
         '200':
           description: Success.
@@ -957,8 +955,10 @@ paths:
       - Officer
       operationId: takeOfficerAction
       summary: Record a review decision
-      description: Officer. Requires assignment, matching workspace and permitted
-        case scope. The officer supplies the action and reason.
+      description: Assigned Officer with current workspace consent for the full incident and any attached
+        evidence. Requires a recorded simulated filing, a legal review transition, a reason, If-Match
+        and Idempotency-Key. Replays return the current permitted case without repeating the decision.
+        Escalation stays within the pinned workspace; rejection and closure are terminal.
       requestBody:
         required: true
         content:
@@ -972,6 +972,11 @@ paths:
             application/json:
               schema:
                 $ref: ./schemas.yaml#/components/schemas/complaints
+          headers: &id004
+            ETag:
+              description: Current quoted complaint version.
+              schema:
+                type: string
         '400':
           $ref: '#/components/responses/Error'
         '401':
@@ -982,6 +987,28 @@ paths:
           $ref: '#/components/responses/Error'
         '409':
           $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description: Stable caller-bound command key. Reuse the same key, body and If-Match after a lost
+          response.
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^"[1-9][0-9]*"$
+        description: Quoted reviewed case version. Check replay by command key before rejecting its original
+          stale version.
   /api/v1/admin/users:
     get:
       tags:
@@ -1054,11 +1081,10 @@ paths:
       - Admin
       operationId: createRoutingRule
       summary: Create a routing rule
-      description: Admin only. Creates a rule and its first immutable snapshot. Uses
-        one supported fraud subtype and one existing demo workspace. Order is ascending
-        priority then rule_id. Optional Idempotency-Key is bound to Admin and normalized
-        creation payload; identical replay returns the current rule with 200, conflicting
-        reuse 409. This is demo routing only.
+      description: Admin only. Creates a rule and its first immutable snapshot. Uses one supported fraud
+        subtype and one existing demo workspace. Order is ascending priority then rule_id. Optional Idempotency-Key
+        is bound to Admin and normalized creation payload; identical replay returns the current rule with
+        200, conflicting reuse 409. This is demo routing only.
       requestBody:
         required: true
         content:
@@ -1074,8 +1100,7 @@ paths:
                 $ref: ./schemas.yaml#/components/schemas/routing_rules
           headers:
             ETag:
-              description: Quoted immutable current rule_version_id. Use as If-Match
-                on edits.
+              description: Quoted immutable current rule_version_id. Use as If-Match on edits.
               schema:
                 type: string
         '400':
@@ -1094,8 +1119,7 @@ paths:
                 $ref: ./schemas.yaml#/components/schemas/routing_rules
           headers:
             ETag:
-              description: Quoted immutable current rule_version_id. Use as If-Match
-                on edits.
+              description: Quoted immutable current rule_version_id. Use as If-Match on edits.
               schema:
                 type: string
         '503':
@@ -1116,11 +1140,10 @@ paths:
       - Admin
       operationId: updateRoutingRule
       summary: Revise a routing rule
-      description: Admin only. A meaningful edit creates a new immutable version and
-        changes the current pointer atomically. Semantic no-ops return the current
-        version. Existing pinned cases retain their original snapshot, including after
-        deactivation or destination changes. Optional If-Match guards concurrent edits.
-        No code restart required.
+      description: Admin only. A meaningful edit creates a new immutable version and changes the current
+        pointer atomically. Semantic no-ops return the current version. Existing pinned cases retain their
+        original snapshot, including after deactivation or destination changes. Optional If-Match guards
+        concurrent edits. No code restart required.
       requestBody:
         required: true
         content:
@@ -1136,8 +1159,7 @@ paths:
                 $ref: ./schemas.yaml#/components/schemas/routing_rules
           headers:
             ETag:
-              description: Quoted immutable current rule_version_id. Use as If-Match
-                on edits.
+              description: Quoted immutable current rule_version_id. Use as If-Match on edits.
               schema:
                 type: string
         '400':
@@ -1167,8 +1189,7 @@ paths:
       - Admin
       operationId: listAudit
       summary: Inspect audit history
-      description: Admin. Read-only trace access. Return authorized summaries and
-        protect private evidence.
+      description: Admin. Read-only trace access. Return authorized summaries and protect private evidence.
       responses:
         '200':
           description: Success.
@@ -1188,8 +1209,8 @@ paths:
       - Admin
       operationId: listAgentRuns
       summary: Inspect agent runs
-      description: Admin. Read-only inspection. Return only runs whose data the administrator
-        is authorized to inspect.
+      description: Admin. Read-only inspection. Return only runs whose data the administrator is authorized
+        to inspect.
       responses:
         '200':
           description: Success.
@@ -1228,8 +1249,8 @@ paths:
       - Admin
       operationId: createApiKey
       summary: Issue a scoped API key
-      description: Admin. Bind the key to the issuing principal and approved scopes.
-        Return the secret at issuance and store only its hash.
+      description: Admin. Bind the key to the issuing principal and approved scopes. Return the secret
+        at issuance and store only its hash.
       requestBody:
         required: true
         content:
@@ -1281,11 +1302,10 @@ paths:
       - Mock services
       operationId: getMockIdentity
       summary: Look up a simulated identity
-      description: Admin within authorized mock-service scope, or an allowlisted agent
-        acting for the Citizen on their own case. Bind the synthetic reference to
-        the relevant user and check consent. Citizen REST reads require complaint_id,
-        a current approved own-case binding and the service-specific consent. Admin
-        access is restricted to synthetic fixture data. Every successful fixture response
+      description: Admin within authorized mock-service scope, or an allowlisted agent acting for the
+        Citizen on their own case. Bind the synthetic reference to the relevant user and check consent.
+        Citizen REST reads require complaint_id, a current approved own-case binding and the service-specific
+        consent. Admin access is restricted to synthetic fixture data. Every successful fixture response
         is explicitly simulated.
       responses:
         '200':
@@ -1316,9 +1336,8 @@ paths:
           type: string
           minLength: 1
           maxLength: 36
-        description: Required for Citizen access, bound to an active approved own
-          case and scoped service consent. Admin may inspect synthetic fixtures without
-          a case context.
+        description: Required for Citizen access, bound to an active approved own case and scoped service
+          consent. Admin may inspect synthetic fixtures without a case context.
   /api/v1/mock/payments/transactions/{reference}:
     parameters:
     - $ref: '#/components/parameters/transaction_referencePath'
@@ -1327,13 +1346,11 @@ paths:
       - Mock services
       operationId: getMockPayment
       summary: Look up a simulated transaction
-      description: Admin within authorized mock-service scope, or an allowlisted agent
-        acting for the Citizen on their own case. Check consent and case scope. For
-        a missing fixture, 404 carries error = not_found. A lookup miss does not invalidate
-        the reported transaction. Citizen REST reads require complaint_id, a current
-        approved own-case binding and the service-specific consent. Admin access is
-        restricted to synthetic fixture data. Every successful fixture response is
-        explicitly simulated.
+      description: Admin within authorized mock-service scope, or an allowlisted agent acting for the
+        Citizen on their own case. Check consent and case scope. For a missing fixture, 404 carries error
+        = not_found. A lookup miss does not invalidate the reported transaction. Citizen REST reads require
+        complaint_id, a current approved own-case binding and the service-specific consent. Admin access
+        is restricted to synthetic fixture data. Every successful fixture response is explicitly simulated.
       responses:
         '200':
           description: Success.
@@ -1363,9 +1380,8 @@ paths:
           type: string
           minLength: 1
           maxLength: 36
-        description: Required for Citizen access, bound to an active approved own
-          case and scoped service consent. Admin may inspect synthetic fixtures without
-          a case context.
+        description: Required for Citizen access, bound to an active approved own case and scoped service
+          consent. Admin may inspect synthetic fixtures without a case context.
   /api/v1/mock/data/requirements/{incident_type}:
     parameters:
     - $ref: '#/components/parameters/incident_typePath'
@@ -1374,11 +1390,10 @@ paths:
       - Mock services
       operationId: getMockRequirements
       summary: Read simulated reporting requirements
-      description: Admin within mock-service scope, or an allowlisted agent acting
-        for the Citizen on their own case. Citizen REST reads require complaint_id,
-        a current approved own-case binding and the service-specific consent. Admin
-        access is restricted to synthetic fixture data. Every successful fixture response
-        is explicitly simulated.
+      description: Admin within mock-service scope, or an allowlisted agent acting for the Citizen on
+        their own case. Citizen REST reads require complaint_id, a current approved own-case binding and
+        the service-specific consent. Admin access is restricted to synthetic fixture data. Every successful
+        fixture response is explicitly simulated.
       responses:
         '200':
           description: Success.
@@ -1408,20 +1423,18 @@ paths:
           type: string
           minLength: 1
           maxLength: 36
-        description: Required for Citizen access, bound to an active approved own
-          case and scoped service consent. Admin may inspect synthetic fixtures without
-          a case context.
+        description: Required for Citizen access, bound to an active approved own case and scoped service
+          consent. Admin may inspect synthetic fixtures without a case context.
   /api/v1/mock/complaints:
     post:
       tags:
       - Mock services
       operationId: submitMockComplaint
       summary: Submit an authorized simulated complaint
-      description: Owning Citizen only. This public adapter validates the exact approved
-        payload and drives the same constrained workflow as /complaints/{id}/submit;
-        it cannot bypass identity/requirements checks or citizen authorization. Admin
-        cannot file. Same key checks prior outcome before a new write. All results
-        are simulated.
+      description: Owning Citizen only. This public adapter validates the exact approved payload and drives
+        the same constrained workflow as /complaints/{id}/submit; it cannot bypass identity/requirements
+        checks or citizen authorization. Admin cannot file. Same key checks prior outcome before a new
+        write. All results are simulated.
       requestBody:
         required: true
         content:
@@ -1473,11 +1486,10 @@ paths:
       - Mock services
       operationId: findMockSubmission
       summary: Check a simulated submission before retry
-      description: Owning Citizen only. Check the simulated recipient confirmation
-        by caller-bound key. Current authorization binding and relevant recipient
-        consent are required for this service read; withdrawal blocks new service
-        reads. Admin management grants no case-confirmation bypass. Citizens retain
-        their own already-saved case/run copy.
+      description: Owning Citizen only. Check the simulated recipient confirmation by caller-bound key.
+        Current authorization binding and relevant recipient consent are required for this service read;
+        withdrawal blocks new service reads. Admin management grants no case-confirmation bypass. Citizens
+        retain their own already-saved case/run copy.
       responses:
         '200':
           description: Success.
@@ -1503,8 +1515,9 @@ paths:
       - Notifications
       operationId: listNotifications
       summary: List my notifications
-      description: Citizen, Helper, Officer or Admin. Only the caller’s notifications,
-        subject to current case access.
+      description: Citizen, Helper, Officer or Admin. Only the caller’s notifications, subject to current
+        case access. Messages are generic, persisted atomically with their event, and contain no incident
+        facts or officer/citizen prose. Withdrawn/reassigned access hides historical notifications too.
       responses:
         '200':
           description: Success.
@@ -1526,8 +1539,8 @@ paths:
       - Notifications
       operationId: readNotification
       summary: Mark a notification as read
-      description: Citizen, Helper, Officer or Admin. Only the recipient with current
-        access may mark the notification as read.
+      description: Citizen, Helper, Officer or Admin. Only the recipient with current access may mark
+        the notification as read.
       responses:
         '200':
           description: Success.
@@ -1543,6 +1556,8 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
   /api/v1/complaints/{id}/analysis:
     parameters:
     - $ref: '#/components/parameters/complaint_idPath'
@@ -1551,10 +1566,10 @@ paths:
       - Citizen complaints
       operationId: getComplaintAnalysis
       summary: Read the current saved assessment
-      description: Owning Citizen only. Returns the persisted analysis for the current
-        complaint version without calling Gemini. 404 when no current analysis exists,
-        including after a meaningful edit or evidence upload. Owner applies accepted
-        extraction suggestions through ordinary complaint PATCH before reanalysis.
+      description: Owning Citizen only. Returns the persisted analysis for the current complaint version
+        without calling Gemini. 404 when no current analysis exists, including after a meaningful edit
+        or evidence upload. Owner applies accepted extraction suggestions through ordinary complaint PATCH
+        before reanalysis.
       responses:
         '200':
           description: Success.
@@ -1576,8 +1591,8 @@ paths:
       - Admin
       operationId: listRoutingRuleVersions
       summary: Read immutable routing history
-      description: Admin only. All snapshots of this logical rule, oldest first by
-        timestamp then version ID. Editing/deleting historical versions is not supported.
+      description: Admin only. All snapshots of this logical rule, oldest first by timestamp then version
+        ID. Editing/deleting historical versions is not supported.
       responses:
         '200':
           description: Immutable history.
@@ -1705,14 +1720,12 @@ paths:
           minLength: 1
           maxLength: 128
       description: 'Owning Citizen only. Run the fixed LangGraph identity/payment/requirements/filing/verification
-        workflow after explicit approval. SQL checkpoints and a bounded execution
-        lease support safe resume. One key per approval, bound to principal/case/approved
-        payload; conflicting reuse is 409. Every sensitive step checks current account,
-        case binding and relevant consent. Persisted flags never substitute for authorization.
-        Unknown payment references are warnings, not proof of invalidity. An uncertain
-        save returns 503: read saved progress/confirmation before retrying the same
-        key. Completed owner-side results may be read from the saved copy without
-        repeating service access.'
+        workflow after explicit approval. SQL checkpoints and a bounded execution lease support safe resume.
+        One key per approval, bound to principal/case/approved payload; conflicting reuse is 409. Every
+        sensitive step checks current account, case binding and relevant consent. Persisted flags never
+        substitute for authorization. Unknown payment references are warnings, not proof of invalidity.
+        An uncertain save returns 503: read saved progress/confirmation before retrying the same key.
+        Completed owner-side results may be read from the saved copy without repeating service access.'
   /api/v1/complaints/{id}/agent-runs:
     parameters:
     - $ref: '#/components/parameters/complaint_idPath'
@@ -1748,9 +1761,8 @@ paths:
           $ref: '#/components/responses/Error'
         '503':
           $ref: '#/components/responses/Error'
-      description: Owning Citizen only. Protected progress/history with live authorization
-        and consent flags reconciled from the database. No Helper/Officer/Admin raw-state
-        bypass.
+      description: Owning Citizen only. Protected progress/history with live authorization and consent
+        flags reconciled from the database. No Helper/Officer/Admin raw-state bypass.
   /api/v1/complaints/{id}/agent-runs/{run_id}:
     parameters:
     - $ref: '#/components/parameters/complaint_idPath'
@@ -1790,9 +1802,116 @@ paths:
           $ref: '#/components/responses/Error'
         '503':
           $ref: '#/components/responses/Error'
-      description: Owning Citizen only. Protected progress/history with live authorization
-        and consent flags reconciled from the database. No Helper/Officer/Admin raw-state
-        bypass.
+      description: Owning Citizen only. Protected progress/history with live authorization and consent
+        flags reconciled from the database. No Helper/Officer/Admin raw-state bypass.
+  /api/v1/complaints/{id}/review-history:
+    parameters:
+    - $ref: '#/components/parameters/complaint_idPath'
+    get:
+      tags:
+      - Citizen complaints
+      operationId: listCitizenReviewHistory
+      summary: Read the case review conversation
+      description: Owning citizen, or assigned Officer with current full-incident and attached-evidence
+        consent. Historical filing facts are not overwritten by review messages.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ./schemas.yaml#/components/schemas/ReviewEvent
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/v1/officer/complaints/{id}/review-history:
+    parameters:
+    - $ref: '#/components/parameters/complaint_idPath'
+    get:
+      tags:
+      - Officer
+      operationId: listOfficerReviewHistory
+      summary: Read the case review conversation
+      description: Owning citizen, or assigned Officer with current full-incident and attached-evidence
+        consent. Historical filing facts are not overwritten by review messages.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ./schemas.yaml#/components/schemas/ReviewEvent
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/v1/complaints/{id}/review-response:
+    parameters:
+    - $ref: '#/components/parameters/complaint_idPath'
+    post:
+      tags:
+      - Citizen complaints
+      operationId: replyToOfficer
+      summary: Answer an outstanding officer information request
+      description: Owning citizen explicitly shares a supplemental message with the pinned simulated workspace.
+        Requires an open information request, an active assigned Officer, current incident/evidence consent,
+        If-Match and Idempotency-Key. Preserves the original filed payload/reference and does not create
+        another filing.
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description: Stable caller-bound command key. Reuse the same key, body and If-Match after a lost
+          response.
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^"[1-9][0-9]*"$
+        description: Quoted reviewed case version. Check replay by command key before rejecting its original
+          stale version.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/components/schemas/ReviewReply
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/complaints
+          headers: *id004
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     BearerAuth:
@@ -1803,8 +1922,8 @@ components:
       type: apiKey
       in: header
       name: X-API-Key
-      description: Scopes grant access by resource area, such as complaints:read or
-        admin:rules. A key carries only the authority of its principal.
+      description: Scopes grant access by resource area, such as complaints:read or admin:rules. A key
+        carries only the authority of its principal.
   parameters:
     complaint_idPath:
       name: id
@@ -1880,10 +1999,9 @@ components:
         minLength: 1
   responses:
     Error:
-      description: The HTTP status identifies the failure. 400 indicates invalid input,
-        401 invalid credentials, 403 insufficient authority or consent, 404 a missing
-        resource, and 409 a conflicting request or case state. The body contains a
-        machine-readable error and a safe explanation.
+      description: The HTTP status identifies the failure. 400 indicates invalid input, 401 invalid credentials,
+        403 insufficient authority or consent, 404 a missing resource, and 409 a conflicting request or
+        case state. The body contains a machine-readable error and a safe explanation.
       content:
         application/json:
           schema:

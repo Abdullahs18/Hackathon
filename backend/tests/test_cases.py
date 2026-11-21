@@ -487,7 +487,7 @@ def test_audit_contains_case_actions_without_incident_text(client, app, owner, c
 
 @pytest.fixture
 def submitted_case(client, auth, app, case):
-    # Isolated policy fixture only. No public API can submit or set this status yet.
+    # Isolated access-policy fixture. Full API filing/review is tested in test_review.py.
     rule = make_routing_rule(client, auth)
     with Session(app.state.engine) as session, session.begin():
         row = session.get(Complaint, case["complaint_id"])

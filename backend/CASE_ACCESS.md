@@ -150,5 +150,6 @@ Do not edit database statuses manually to pretend that submission works.
 Protected evidence uploads/retrieval were added in the next increment; see EVIDENCE.md.
 Saved AI analysis/classification, immutable routing and citizen-authorized LangGraph/mock filing
 are implemented in later increments; see CASE_ANALYSIS.md, ROUTING.md and SUBMISSION.md.
-Still pending: integrated audio/playback, officer decisions, notifications, API keys, complete
+Officer decisions and notifications are now implemented; see OFFICER_REVIEW.md.
+Still pending: integrated audio/playback, API keys, complete
 audit inspection, pinned mock-server verification and the team frontend integration checkpoints.
