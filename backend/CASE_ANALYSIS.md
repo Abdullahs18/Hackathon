@@ -1,7 +1,7 @@
 # Saved-case text assessment
 
-Migration `0004` adds private versioned case assessments. There are 28 implemented operations
-out of 45 canonical planned operations. The original 26 operations remain available.
+Migration `0004` adds private versioned case assessments. Routing migration `0005` extends their
+readiness and review behavior. There are now 32 implemented operations out of 46 planned operations.
 
 | Operation | Behavior |
 | --- | --- |
@@ -36,14 +36,15 @@ case or prove fraud. Follow-ups use only missing fields, omit already supplied v
 for optional details only if known. Unknown dates/references stay unknown. Scores and model
 confidence are prototype indicators, not calibrated probabilities or fraud verdicts.
 
-## Deliberate routing boundary
+## Routing, readiness and review
 
-The routing engine is the next dependency. Its match contribution is currently zero and
-`routing_unavailable` is always a hard-stop reason, regardless of the numeric readiness score.
-Consequently the current result is `HUMAN_REVIEW`, never an apparently ready/submitted complaint.
-The response includes `submitted: false` and `requires_citizen_review: true`. No authority is
-selected, formal complaint generated, consent inferred or submission authorized by this feature.
-This status records a need for review; it does not claim a human-review queue/UI is implemented.
+The deterministic versioned routing engine is implemented; see ROUTING.md. An active matching
+demo rule contributes 0.15 and pins the exact immutable version. Missing/invalid/mismatched routes
+and other hard stops produce HUMAN_REVIEW. Otherwise missing required facts or a score below
+0.85 produce NEEDS_INFORMATION; complete cases at least 0.85 get CITIZEN_REVIEW and a structured
+draft assembled from saved facts. Unknown optional values remain unknown. The draft is unconfirmed,
+requires_citizen_review is true, and submitted is false. No consent or filing authority is inferred.
+These states do not claim an Officer handoff queue or real government integration is implemented.
 
 Owners and permitted Helpers may correct facts on a HUMAN_REVIEW case; a meaningful change
 returns it to DRAFT and requires a fresh analysis. This does not bypass any review/filing gate.
@@ -51,7 +52,10 @@ returns it to DRAFT and requires a fresh analysis. This does not bypass any revi
 ## Persistence, failures and concurrency
 
 Analysis updates complaint status/version and returns the new ETag and `complaint_version`.
-Reanalysis of the unchanged current version returns the cached result. Meaningful incident edits
+Reanalysis of the unchanged current version returns the cached result. Unrouted cases reevaluate
+when the rule catalog changes, reusing the saved assessment without another provider call. Older
+pre-routing results upgrade this way on POST; GET continues to return the stored snapshot.
+Meaningful incident edits
 or evidence uploads invalidate the current result; GET then returns 404 until reanalysis. Old
 assessments remain stored for later protected historical trace, not exposed through an unscoped
 history endpoint. Submitted/finalized cases cannot be analyzed through this draft operation.
@@ -78,6 +82,7 @@ Keep the existing `.env`, Gemini key and model choice. From the repository root:
 git switch be
 git pull origin be
 docker compose up --build -d
+docker compose run --rm api python -m app.seed
 docker compose ps -a
 ```
 
@@ -96,8 +101,11 @@ docker compose ps -a
 ```
 
 3. POST its `/analyze` with `{"allow_external_processing": true}`. Expect 200, structured
-   extraction/classification, an Urdu summary, `routing_unavailable`, `HUMAN_REVIEW` and
-   `submitted: false`. Other flags depend on the input/provider. Unknown dates must not be invented.
+   extraction/classification, an Urdu summary and `submitted: false`. With an active matching
+   rule and sufficient readiness, expect CITIZEN_REVIEW and an unconfirmed draft; missing facts
+   or hard stops give NEEDS_INFORMATION/HUMAN_REVIEW. Existing duplicated DEMO123 references may
+   trigger review; omit unknown references or use unique synthetic references for a normal case.
+   Unknown dates must not be invented. ROUTING.md provides a complete rule-change check.
 4. GET `/analysis`, repeat POST on the unchanged version, and restart the API. The saved result
    must be recoverable; repeat requests use the cache rather than invoking Gemini again.
 5. PATCH a meaningful fact such as amount, or upload new synthetic evidence. GET `/analysis`
@@ -105,12 +113,11 @@ docker compose ps -a
 6. Another Citizen, Helper or Admin must receive 403 for POST/GET analysis. False external
    permission returns 400. Do not share your Gemini key or full tokens when reporting results.
 
-Automated tests use a fake provider and make no paid/external calls. Live provider proof was
-previously user-confirmed for the CLI. This new endpoint's live Gemini check is a separate user
-check; automated success does not claim it has been performed.
+Automated tests use a fake provider and make no paid/external calls. The user confirmed both the
+CLI provider proof and the saved-case API Gemini assessment worked locally. The routing rule-change
+demo remains a separate local verification; automated success does not claim it was performed.
 
-Still pending: integrated voice/audio endpoints and playback, deterministic immutable routing,
-route-aware readiness and complaint generation, LangGraph/mock submission, explicit final
+Still pending: integrated voice/audio endpoints and playback, LangGraph/mock submission, explicit final
 authorization, officer decisions, notifications, API keys, complete audit browsing, frontend
 integration checkpoints and pinned mock-server validation. RAG remains a bounded extension after
 the core reporting flow works; the full dataset/knowledge collection will use a separate branch.

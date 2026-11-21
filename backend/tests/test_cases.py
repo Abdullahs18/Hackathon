@@ -488,11 +488,12 @@ def test_audit_contains_case_actions_without_incident_text(client, app, owner, c
 @pytest.fixture
 def submitted_case(client, auth, app, case):
     # Isolated policy fixture only. No public API can submit or set this status yet.
+    rule = make_routing_rule(client, auth)
     with Session(app.state.engine) as session, session.begin():
         row = session.get(Complaint, case["complaint_id"])
         row.current_status = "SUBMITTED"
         row.destination_workspace_id = "mock-financial-fraud"
-        row.rule_version_id = "test-only-pinned-rule-v1"
+        row.rule_version_id = rule["rule_version_id"]
     give_consent(
         client,
         auth("demo-citizen-1"),
@@ -501,6 +502,25 @@ def submitted_case(client, auth, app, case):
         purpose="complaint_submission",
     )
     return case
+
+
+def make_routing_rule(client, auth, **changes):
+    result = client.post(
+        "/api/v1/admin/routing-rules",
+        headers=auth(),
+        json={
+            "name": "Synthetic test route",
+            "incident_type": "fake aid scam",
+            "destination_workspace_id": "mock-financial-fraud",
+            "priority": 100,
+            "active": True,
+            "explanation": "Simulated intake for testing.",
+            "justification": "Synthetic test fixture; not an official destination.",
+            **changes,
+        },
+    )
+    assert result.status_code == 201, result.text
+    return result.json()
 
 
 def assign(client, auth, case_id, officer="demo-officer-financial"):

@@ -88,7 +88,7 @@ def test_saved_assessment_preserves_facts_and_never_claims_ready(
     assert_response(response, "/api/v1/complaints/{id}/analyze", "post")
     result = response.json()
     assert result["current_status"] == "HUMAN_REVIEW"
-    assert "routing_unavailable" in result["handoff_reasons"]
+    assert "no_matching_rule" in result["handoff_reasons"]
     assert result["requires_citizen_review"] and not result["submitted"]
     assert result["complaint_version"] == 2 and response.headers["etag"] == '"2"'
     assert result["input_version"] == 1

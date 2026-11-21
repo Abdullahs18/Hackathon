@@ -601,38 +601,79 @@ components:
       properties:
         name:
           type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
         incident_type:
           type: string
+          enum: &id001
+          - fake aid scam
+          - phishing
+          - impersonation
+          - fraudulent transfer
+          - other suspected online financial fraud
+          description: Supported subtype within the one suspected-online-financial-fraud
+            workflow. Exact classifier-label match.
         destination_workspace_id:
           type: string
           minLength: 1
+          enum:
+          - mock-financial-fraud
+          - mock-digital-safety
         priority:
           type: integer
+          minimum: 0
+          maximum: 1000
+          description: Lower number evaluates first; ties use ascending rule_id.
         active:
           type: boolean
         explanation:
           type: string
+          minLength: 1
+          maxLength: 4000
+          pattern: \S
         justification:
           type: string
+          minLength: 1
+          maxLength: 4000
+          pattern: \S
     RuleChange:
       type: object
       additionalProperties: false
       properties:
         name:
           type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
         incident_type:
           type: string
+          enum: *id001
+          description: Supported subtype within the one suspected-online-financial-fraud
+            workflow. Exact classifier-label match.
         destination_workspace_id:
           type: string
           minLength: 1
+          enum:
+          - mock-financial-fraud
+          - mock-digital-safety
         priority:
           type: integer
+          minimum: 0
+          maximum: 1000
+          description: Lower number evaluates first; ties use ascending rule_id.
         active:
           type: boolean
         explanation:
           type: string
+          minLength: 1
+          maxLength: 4000
+          pattern: \S
         justification:
           type: string
+          minLength: 1
+          maxLength: 4000
+          pattern: \S
       minProperties: 1
     routing_rule_versions:
       type: object
@@ -1246,9 +1287,20 @@ components:
           type: boolean
           enum:
           - false
-      description: Persisted, owner-only assessment of an exact complaint version.
-        Derived status/score never authorize submission. Missing routing implementation
-        always produces a human-review hard stop.
+        routing:
+          $ref: '#/components/schemas/RouteDecision'
+        routing_generation:
+          type: integer
+          minimum: 1
+        policy_version:
+          type: string
+          enum:
+          - routing-v1
+        complaint_draft:
+          $ref: '#/components/schemas/ComplaintDraft'
+      description: Persisted owner-only assessment for an exact saved revision. Deterministic
+        routing pins an immutable rule version. Readiness and review drafts never
+        grant consent or authorize submission.
     EvidenceUpload:
       type: object
       description: Exactly one file field. Original PNG, JPEG, WebP or static unencrypted
@@ -1364,3 +1416,32 @@ components:
       description: Validated provider assessment of untrusted saved incident data.
         Extraction is an unconfirmed suggestion; never overwrites saved citizen facts
         or authorizes filing.
+    RouteDecision:
+      type: object
+      nullable: true
+      additionalProperties: false
+      required:
+      - rule_id
+      - rule_version_id
+      - destination_workspace_id
+      - incident_type
+      - explanation
+      - justification
+      properties:
+        rule_id:
+          type: string
+          minLength: 1
+        rule_version_id:
+          type: string
+          minLength: 1
+        destination_workspace_id:
+          type: string
+          minLength: 1
+        incident_type:
+          type: string
+        explanation:
+          type: string
+        justification:
+          type: string
+      description: Immutable demo rule used for this assessment, or null when no valid
+        route can be used. No real government filing or authority endorsement.

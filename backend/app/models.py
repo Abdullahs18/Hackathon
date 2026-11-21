@@ -63,7 +63,7 @@ class Complaint(Base):
     destination_workspace_id: Mapped[str | None] = mapped_column(
         ForeignKey("workspaces.workspace_id")
     )
-    # Foreign key to immutable routing versions is introduced with the routing engine.
+    # Historical logical reference: the routing resolver fails closed on unknown legacy pins.
     rule_version_id: Mapped[str | None] = mapped_column(String(100))
     current_status: Mapped[str] = mapped_column(String(40), default="DRAFT")
     incident_type: Mapped[str | None] = mapped_column(String(200))
@@ -118,6 +118,46 @@ class Consent(Base):
     granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class RoutingCatalog(Base):
+    __tablename__ = "routing_catalog"
+    __table_args__ = (
+        CheckConstraint("catalog_id = 1", name="ck_routing_catalog_singleton"),
+        CheckConstraint("generation >= 1", name="ck_routing_generation"),
+    )
+    catalog_id: Mapped[int] = mapped_column(primary_key=True)
+    generation: Mapped[int]
+
+
+class RoutingVersion(Base):
+    __tablename__ = "routing_rule_versions"
+    rule_version_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    # Logical parent avoids cyclic insertion and preserves snapshots independently of a pointer.
+    rule_id: Mapped[str] = mapped_column(String(36), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    incident_type: Mapped[str] = mapped_column(String(200), index=True)
+    destination_workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.workspace_id"))
+    priority: Mapped[int]
+    active: Mapped[bool]
+    explanation: Mapped[str] = mapped_column(Text)
+    justification: Mapped[str] = mapped_column(Text)
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class RoutingRule(Base):
+    __tablename__ = "routing_rules"
+    __table_args__ = (
+        UniqueConstraint("creator_id", "create_idempotency_key", name="uq_rule_create_key"),
+    )
+    rule_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    rule_version_id: Mapped[str] = mapped_column(
+        ForeignKey("routing_rule_versions.rule_version_id")
+    )
+    creator_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    create_idempotency_key: Mapped[str | None] = mapped_column(String(128))
+    create_fingerprint: Mapped[str | None] = mapped_column(String(64))
 
 
 class CaseAnalysis(Base):

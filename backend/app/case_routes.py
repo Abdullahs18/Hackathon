@@ -462,10 +462,15 @@ def get_officer_complaint(id: str, response: Response, user: CurrentUser, sessio
 
 @router.post("/admin/complaints/{id}/assignment", operation_id="assignOfficer", tags=["Admin"])
 def assign_officer(id: str, body: dict, admin: AdminUser, session: SessionDep):
+    from app.routing import pinned_snapshot
+
     case = locked_case(session, id)
     validate_payload("OfficerAssignmentCreate", body)
     officer = session.get(User, body["officer_id"])
-    if case.current_status not in {"SUBMITTED", "OFFICER_REVIEW"} or not case.rule_version_id:
+    if (
+        case.current_status not in {"SUBMITTED", "OFFICER_REVIEW"}
+        or pinned_snapshot(session, case) is None
+    ):
         raise HTTPException(409, "Assignment requires a submitted case with a pinned route.")
     if (
         officer is None

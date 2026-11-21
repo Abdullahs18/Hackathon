@@ -139,8 +139,9 @@ Officer list/detail checks enforce assignment, matching officer/assignment/compl
 submitted/review/resolved state, active account and current workspace consent. Responses are
 filtered to consented data; workspace consent withdrawal blocks access even with an assignment.
 
-The assignment endpoint returns metadata only. It requires a submitted/review case with a pinned
-route and current workspace consent, and an active Officer in that workspace. It cannot turn a
+The assignment endpoint returns metadata only. It requires a submitted/review case with a valid
+immutable pinned snapshot matching the destination, current workspace consent, and an active Officer
+in that workspace. Unknown legacy version identifiers do not satisfy this gate. It cannot turn a
 draft into a submitted case. On a fresh manual draft, assignment returns 409 and Officer lists
 remain empty. Automated policy tests use explicitly synthetic submitted-case fixtures; they do
 not stand in for the future live routing/authorization/submission workflow. Do not edit database

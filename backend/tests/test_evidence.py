@@ -17,7 +17,15 @@ from sqlalchemy.orm import Session
 from app.evidence_validation import EvidenceValidator
 from app.models import Complaint, Evidence
 from tests.conftest import BACKEND
-from tests.test_cases import assign, case, case_factory, give_consent, give_helper, owner
+from tests.test_cases import (
+    assign,
+    case,
+    case_factory,
+    give_consent,
+    give_helper,
+    make_routing_rule,
+    owner,
+)
 from tests.test_contract import assert_response
 
 __all__ = ["case", "case_factory", "owner"]
@@ -208,13 +216,14 @@ def test_commit_acknowledgement_loss_preserves_original(client, owner, case, mon
 def test_officer_requires_assignment_workspace_and_current_evidence_scope(
     client, auth, owner, case, app
 ):
+    rule = make_routing_rule(client, auth)
     item = upload(client, owner, case).json()
     path = f"/api/v1/complaints/{case['complaint_id']}/evidence/{item['evidence_id']}/content"
     with Session(app.state.engine) as session, session.begin():
         row = session.get(Complaint, case["complaint_id"])
         row.current_status = "SUBMITTED"
         row.destination_workspace_id = "mock-financial-fraud"
-        row.rule_version_id = "test-only-pinned-rule-v1"
+        row.rule_version_id = rule["rule_version_id"]
     consent = give_consent(
         client,
         owner,

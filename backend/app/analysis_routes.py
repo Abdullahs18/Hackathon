@@ -17,6 +17,7 @@ from app.audit import record_event
 from app.case_policy import EDITABLE, own_case, require_version, timestamp
 from app.case_routes import IfMatch
 from app.models import CaseAnalysis, Complaint, User
+from app.routing import POLICY_VERSION, catalog, decision, pinned_snapshot, resolve
 from app.security import CurrentUser, SessionDep
 from app.validation import validate_payload, validate_schema
 from app.voice.config import VoiceError
@@ -61,6 +62,45 @@ def current_analysis(session, case):
     )
 
 
+def cache_matches(session, existing, case, generation):
+    if existing is None or existing.result.get("policy_version") != POLICY_VERSION:
+        return False
+    result = existing.result
+    if case.rule_version_id is None and case.destination_workspace_id is None:
+        return result.get("routing_generation") == generation
+    if result.get("routing"):
+        snapshot = pinned_snapshot(session, case)
+        return bool(
+            snapshot
+            and snapshot.rule_version_id == result["routing"]["rule_version_id"]
+            and snapshot.incident_type == result["classification"]["incident_type"]
+        )
+    snapshot = pinned_snapshot(session, case)
+    reasons = result.get("handoff_reasons", [])
+    return (snapshot is None and "invalid_pinned_route" in reasons) or (
+        snapshot is not None
+        and snapshot.incident_type != result["classification"]["incident_type"]
+        and "pinned_route_mismatch" in reasons
+    )
+
+
+def saved_assessment(existing):
+    if existing is not None:
+        try:
+            model = existing.result["model"]
+            if not isinstance(model, str) or not model.strip():
+                return None
+            return validate_assessment(
+                {
+                    "classification": existing.result["classification"],
+                    "extraction": existing.result["extraction"],
+                }
+            ), model
+        except (KeyError, VoiceError):
+            return None
+    return None
+
+
 @router.get(
     "/complaints/{id}/analysis", operation_id="getComplaintAnalysis", tags=["Citizen complaints"]
 )
@@ -91,7 +131,8 @@ def analyze(
     if case.current_status not in EDITABLE:
         raise HTTPException(409, "This complaint cannot be analyzed in its current state.")
     existing = current_analysis(session, case)
-    if existing is not None:
+    state = catalog(session)
+    if cache_matches(session, existing, case, state.generation):
         response.headers["ETag"] = f'"{case.version}"'
         return deepcopy(existing.result)
     actor_id = user.user_id
@@ -111,129 +152,177 @@ def analyze(
     ):
         raise HTTPException(400, "Save an incident description or scam message before analysis.")
     with request.app.state.analysis_guard.claim(id):
-        record_event(
-            session,
-            "analysis.external_processing_authorized",
-            actor_id,
-            "Citizen permitted this version to be assessed by Gemini",
-            complaint_id=id,
-            details={
-                "input_version": input_version,
-                "fields": sorted(sent),
-                "input_sha256": hashlib.sha256(encoded.encode()).hexdigest(),
-            },
-        )
-        # Release the transaction/row lock before the bounded external call.
-        session.commit()
-        try:
-            provider = request.app.state.analysis_provider_factory()
+        reusable = saved_assessment(existing)
+        if reusable is not None:
+            assessment, model = reusable
+            record_event(
+                session,
+                "analysis.assessment_reused",
+                actor_id,
+                "Saved assessment reused for deterministic routing",
+                complaint_id=id,
+                details={
+                    "input_version": input_version,
+                    "source_analysis_id": existing.analysis_id,
+                },
+            )
+        else:
+            record_event(
+                session,
+                "analysis.external_processing_authorized",
+                actor_id,
+                "Citizen permitted this version to be assessed by Gemini",
+                complaint_id=id,
+                details={
+                    "input_version": input_version,
+                    "fields": sorted(sent),
+                    "input_sha256": hashlib.sha256(encoded.encode()).hexdigest(),
+                },
+            )
+            # Release case/catalog locks and the DB connection before the external call.
+            session.commit()
             try:
-                assessment = provider.assess(sent)
-                assessment = validate_assessment(assessment.model_dump())
-                model = provider.model
-                if not isinstance(model, str) or not model.strip():
-                    raise VoiceError("invalid_model_output", "Missing model metadata.")
-            finally:
-                provider.close()
-        except Exception as exc:
-            code = exc.code if isinstance(exc, VoiceError) else "provider_unavailable"
-            record_event(
-                session,
-                "analysis.failed",
-                actor_id,
-                "Assessment unavailable",
-                complaint_id=id,
-                details={"input_version": input_version, "code": code},
-            )
-            session.commit()
-            if code == "provider_quota":
-                raise HTTPException(
-                    429, "Gemini quota is unavailable. Retry later.", {"Retry-After": "60"}
-                ) from None
-            if code == "invalid_model_output":
-                raise HTTPException(
-                    502, "AI assessment failed validation. Saved incident was preserved."
-                ) from None
-            raise HTTPException(
-                503, "AI analysis is unavailable. Saved incident was preserved."
-            ) from None
-        # Never trust an account/permission or case snapshot held during an external request.
-        current = session.get(User, actor_id, populate_existing=True)
-        if current is None or not current.active or current.role != "Citizen":
-            record_event(
-                session,
-                "analysis.discarded",
-                actor_id,
-                "Account access changed",
-                complaint_id=id,
-                details={"input_version": input_version},
-            )
-            session.commit()
-            raise HTTPException(403, "Current Citizen access is required to save analysis.")
-        case = own_case(session, current, id)
-        if case.version != input_version or case.current_status not in EDITABLE:
-            record_event(
-                session,
-                "analysis.discarded",
-                actor_id,
-                "Case changed during assessment",
-                complaint_id=id,
-                details={"input_version": input_version},
-            )
-            session.commit()
-            raise HTTPException(409, "Complaint changed during analysis. Reload before retrying.")
-        reference = (incident.get("transaction_reference") or "").strip().casefold()
-        possible_duplicate = bool(reference) and any(
-            (other.incident_data.get("transaction_reference") or "").strip().casefold() == reference
-            for other in session.scalars(
-                select(Complaint).where(
-                    Complaint.citizen_id == actor_id, Complaint.complaint_id != id
-                )
-            )
+                provider = request.app.state.analysis_provider_factory()
+                try:
+                    assessment = provider.assess(sent)
+                    assessment = validate_assessment(assessment.model_dump())
+                    model = provider.model
+                    if not isinstance(model, str) or not model.strip():
+                        raise VoiceError("invalid_model_output", "Missing model metadata.")
+                finally:
+                    provider.close()
+            except Exception as exc:
+                fail_assessment(session, actor_id, id, input_version, exc)
+        return save_assessment(
+            session, actor_id, id, input_version, incident, assessment, model, response
         )
-        result = evaluate(incident, assessment, possible_duplicate)
-        now = datetime.now(UTC)
-        case.version += 1
-        case.updated_at = now
-        case.current_status = result["current_status"]
-        case.complaint_draft = None
-        result.update(
-            analysis_id=str(uuid4()),
-            input_version=input_version,
-            complaint_version=case.version,
-            analyzed_at=timestamp(now),
-            model=model,
-        )
-        validate_schema("Analysis", result)
-        record = CaseAnalysis(
-            analysis_id=result["analysis_id"],
-            complaint_id=id,
-            input_version=input_version,
-            result_version=case.version,
-            result=result,
-            created_at=now,
-        )
-        session.add(record)
+
+
+def fail_assessment(session, actor_id, id, input_version, exc):
+    code = exc.code if isinstance(exc, VoiceError) else "provider_unavailable"
+    record_event(
+        session,
+        "analysis.failed",
+        actor_id,
+        "Assessment unavailable",
+        complaint_id=id,
+        details={"input_version": input_version, "code": code},
+    )
+    session.commit()
+    if code == "provider_quota":
+        raise HTTPException(
+            429, "Gemini quota is unavailable. Retry later.", {"Retry-After": "60"}
+        ) from None
+    if code == "invalid_model_output":
+        raise HTTPException(
+            502, "AI assessment failed validation. Saved incident was preserved."
+        ) from None
+    raise HTTPException(503, "AI analysis is unavailable. Saved incident was preserved.") from None
+
+
+def save_assessment(session, actor_id, id, input_version, incident, assessment, model, response):
+    # Never trust an account/permission or case snapshot held during an external request.
+    current = session.get(User, actor_id, populate_existing=True)
+    if current is None or not current.active or current.role != "Citizen":
         record_event(
             session,
-            "analysis.completed",
+            "analysis.discarded",
             actor_id,
-            "Assessment requires citizen/human review",
+            "Account access changed",
             complaint_id=id,
-            details={
-                "analysis_id": record.analysis_id,
-                "input_version": input_version,
-                "complaint_version": case.version,
-                "handoff_reasons": result["handoff_reasons"],
-            },
+            details={"input_version": input_version},
         )
-        try:
-            session.commit()
-        except SQLAlchemyError:
-            session.rollback()
-            raise HTTPException(
-                503,
-                "Analysis save outcome is uncertain. Read the current analysis before retrying.",
-            ) from None
-        response.headers["ETag"] = f'"{result["complaint_version"]}"'
-        return result
+        session.commit()
+        raise HTTPException(403, "Current Citizen access is required to save analysis.")
+    case = own_case(session, current, id)
+    if case.version != input_version or case.current_status not in EDITABLE:
+        record_event(
+            session,
+            "analysis.discarded",
+            actor_id,
+            "Case changed during assessment",
+            complaint_id=id,
+            details={"input_version": input_version},
+        )
+        session.commit()
+        raise HTTPException(409, "Complaint changed during analysis. Reload before retrying.")
+    reference = (incident.get("transaction_reference") or "").strip().casefold()
+    possible_duplicate = bool(reference) and any(
+        (other.incident_data.get("transaction_reference") or "").strip().casefold() == reference
+        for other in session.scalars(
+            select(Complaint).where(Complaint.citizen_id == actor_id, Complaint.complaint_id != id)
+        )
+    )
+    state = catalog(session)
+    was_pinned = case.rule_version_id is not None
+    snapshot, route_reason = resolve(session, case, assessment.classification.incident_type)
+    result = evaluate(
+        incident,
+        assessment,
+        possible_duplicate,
+        route_match=snapshot is not None,
+        route_reason=route_reason,
+    )
+    result.update(
+        routing=decision(snapshot),
+        routing_generation=state.generation,
+        policy_version=POLICY_VERSION,
+    )
+    now = datetime.now(UTC)
+    case.version += 1
+    case.updated_at = now
+    case.current_status = result["current_status"]
+    case.complaint_draft = result.get("complaint_draft")
+    result.update(
+        analysis_id=str(uuid4()),
+        input_version=input_version,
+        complaint_version=case.version,
+        analyzed_at=timestamp(now),
+        model=model,
+    )
+    validate_schema("Analysis", result)
+    record = CaseAnalysis(
+        analysis_id=result["analysis_id"],
+        complaint_id=id,
+        input_version=input_version,
+        result_version=case.version,
+        result=result,
+        created_at=now,
+    )
+    session.add(record)
+    record_event(
+        session,
+        "routing.preserved" if was_pinned else "routing.evaluated",
+        actor_id,
+        "Demo rule evaluated",
+        complaint_id=id,
+        rule_version_id=case.rule_version_id,
+        details={
+            "generation": state.generation,
+            "reason": route_reason,
+            "analysis_id": record.analysis_id,
+        },
+    )
+    record_event(
+        session,
+        "analysis.completed",
+        actor_id,
+        "Assessment saved; submission requires separate citizen authorization",
+        complaint_id=id,
+        details={
+            "analysis_id": record.analysis_id,
+            "input_version": input_version,
+            "complaint_version": case.version,
+            "handoff_reasons": result["handoff_reasons"],
+        },
+    )
+    try:
+        session.commit()
+    except SQLAlchemyError:
+        session.rollback()
+        raise HTTPException(
+            503,
+            "Analysis save outcome is uncertain. Read the current analysis before retrying.",
+        ) from None
+    response.headers["ETag"] = f'"{result["complaint_version"]}"'
+    return result

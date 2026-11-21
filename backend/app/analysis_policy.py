@@ -66,7 +66,13 @@ QUESTIONS_UR = {
 }
 
 
-def evaluate(incident: dict, assessment: Assessment, possible_duplicate: bool) -> dict:
+def evaluate(
+    incident: dict,
+    assessment: Assessment,
+    possible_duplicate: bool,
+    route_match: bool = False,
+    route_reason: str | None = "no_matching_rule",
+) -> dict:
     classification = assessment.classification.model_dump()
     required = ["description", "money_lost"]
     if incident.get("money_lost") is True:
@@ -97,28 +103,59 @@ def evaluate(incident: dict, assessment: Assessment, possible_duplicate: bool) -
         flags.append("money_loss_amount_conflict")
     classification["contradiction_flags"] = list(dict.fromkeys(flags))
     completeness = sum(present(name) for name in required) / len(required)
-    # Routing is deliberately unavailable in this increment: never invent a match or destination.
-    score = round(
-        0.35 * classification["confidence"] + 0.30 * completeness + 0.20 * (0 if flags else 1), 4
+    raw_score = (
+        0.35 * classification["confidence"]
+        + 0.30 * completeness
+        + 0.20 * (0 if flags else 1)
+        + 0.15 * route_match
     )
-    reasons = ["routing_unavailable"]
+    reasons = [route_reason or "no_matching_rule"] if not route_match else []
     if flags:
         reasons.append("unresolved_contradiction")
     if possible_duplicate:
         reasons.append("possible_duplicate")
     if classification["incident_type"] in {"unclear", "out of scope"}:
         reasons.append("unsupported_or_unclear_incident")
-    if score < 0.60:
+    if raw_score < 0.60:
         reasons.append("low_readiness")
-    return {
+    status = (
+        "HUMAN_REVIEW"
+        if reasons
+        else ("NEEDS_INFORMATION" if missing or raw_score < 0.85 else "CITIZEN_REVIEW")
+    )
+    questions = [
+        QUESTIONS_UR[name] for name in classification["missing_fields"] if name in QUESTIONS_UR
+    ][:5]
+    if status == "NEEDS_INFORMATION" and not questions:
+        questions = [QUESTIONS_UR["incident_type"]]
+    result = {
         "classification": classification,
-        "readiness_score": score,
-        "current_status": "HUMAN_REVIEW",
+        "readiness_score": round(raw_score, 6),
+        "current_status": status,
         "extraction": assessment.extraction.model_dump(),
-        "follow_up_questions_ur": [
-            QUESTIONS_UR[name] for name in classification["missing_fields"] if name in QUESTIONS_UR
-        ][:5],
+        "follow_up_questions_ur": questions,
         "handoff_reasons": reasons,
         "requires_citizen_review": True,
         "submitted": False,
     }
+    if status == "CITIZEN_REVIEW":
+        draft = {
+            name: incident.get(name)
+            for name in (
+                "incident_date",
+                "description",
+                "amount",
+                "currency",
+                "payment_method",
+                "transaction_reference",
+            )
+        }
+        draft.update(
+            incident_type=classification["incident_type"],
+            suspect_details=incident.get("suspect_details") or [],
+            evidence_ids=incident.get("evidence_ids") or [],
+            citizen_confirmed=False,
+        )
+        validate_schema("ComplaintDraft", draft)
+        result["complaint_draft"] = draft
+    return result

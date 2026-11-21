@@ -612,19 +612,23 @@ paths:
       - Citizen complaints
       operationId: analyzeComplaint
       summary: Analyze the saved incident
-      description: Owning Citizen only. Requires explicit allow_external_processing=true.
-        Sends saved incident fields to Gemini, excluding evidence IDs and citizen-confirmation
-        records; never sends evidence bytes. Validates structured extraction/classification
-        and persists an unconfirmed preview plus deterministic readiness/handoff.
-        Never overwrites incident data or submits a complaint. No routing engine is
-        implemented yet, so routing_unavailable forces HUMAN_REVIEW. Current analysis
-        is cached for the exact saved version; a meaningful edit/upload invalidates
-        it. No DB lock is held during the provider call; a changed version/account
-        rejects the stale result. If-Match optionally guards new requests. The serialized
-        provider input is limited to 24000 Unicode characters and requires a nonblank
-        description or scam_message. Provider calls are limited to two concurrent
-        assessments per API process and one per complaint. Cached requests make no
-        provider call.
+      description: Owning Citizen only; explicit allow_external_processing=true is
+        required. Saved incident data is assessed by Gemini, excluding evidence IDs
+        and citizen-confirmation records; evidence bytes are never sent. Input is
+        limited to 24000 Unicode characters and needs description or scam_message.
+        Validated extraction remains an unconfirmed preview. Database rules match
+        the classifier subtype, ordered by priority then rule_id, and pin an immutable
+        version. A pinned route is preserved across rule edits; missing/invalid/mismatched
+        pins, no match, low readiness, unresolved contradictions or possible duplicates
+        force HUMAN_REVIEW. Otherwise missing required facts or readiness below 0.85
+        produce NEEDS_INFORMATION; complete cases at least 0.85 get a structured,
+        unconfirmed CITIZEN_REVIEW draft. Optional unknown dates/references are not
+        mandatory. No consent, citizen confirmation or submission is inferred. Current
+        results are cached. Unrouted results are reevaluated when the rule catalog
+        changes; validated saved assessments are reused without another provider call.
+        Provider calls release DB locks and recheck account/version before saving;
+        concurrent same-case work returns 429. Optional If-Match guards the saved
+        revision.
       responses:
         '200':
           description: Success.
@@ -1043,7 +1047,11 @@ paths:
       - Admin
       operationId: createRoutingRule
       summary: Create a routing rule
-      description: Admin. Creates the first immutable version.
+      description: Admin only. Creates a rule and its first immutable snapshot. Uses
+        one supported fraud subtype and one existing demo workspace. Order is ascending
+        priority then rule_id. Optional Idempotency-Key is bound to Admin and normalized
+        creation payload; identical replay returns the current rule with 200, conflicting
+        reuse 409. This is demo routing only.
       requestBody:
         required: true
         content:
@@ -1057,6 +1065,12 @@ paths:
             application/json:
               schema:
                 $ref: ./schemas.yaml#/components/schemas/routing_rules
+          headers:
+            ETag:
+              description: Quoted immutable current rule_version_id. Use as If-Match
+                on edits.
+              schema:
+                type: string
         '400':
           $ref: '#/components/responses/Error'
         '401':
@@ -1065,6 +1079,28 @@ paths:
           $ref: '#/components/responses/Error'
         '409':
           $ref: '#/components/responses/Error'
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/routing_rules
+          headers:
+            ETag:
+              description: Quoted immutable current rule_version_id. Use as If-Match
+                on edits.
+              schema:
+                type: string
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
   /api/v1/admin/routing-rules/{id}:
     parameters:
     - $ref: '#/components/parameters/rule_idPath'
@@ -1073,8 +1109,11 @@ paths:
       - Admin
       operationId: updateRoutingRule
       summary: Revise a routing rule
-      description: Admin. Creates an immutable version for subsequent routing. Previously
-        routed cases retain their version.
+      description: Admin only. A meaningful edit creates a new immutable version and
+        changes the current pointer atomically. Semantic no-ops return the current
+        version. Existing pinned cases retain their original snapshot, including after
+        deactivation or destination changes. Optional If-Match guards concurrent edits.
+        No code restart required.
       requestBody:
         required: true
         content:
@@ -1088,6 +1127,12 @@ paths:
             application/json:
               schema:
                 $ref: ./schemas.yaml#/components/schemas/routing_rules
+          headers:
+            ETag:
+              description: Quoted immutable current rule_version_id. Use as If-Match
+                on edits.
+              schema:
+                type: string
         '400':
           $ref: '#/components/responses/Error'
         '401':
@@ -1096,6 +1141,19 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          type: string
+        description: Quoted current rule_version_id. Stale edits return 412.
   /api/v1/admin/audit:
     get:
       tags:
@@ -1426,6 +1484,31 @@ paths:
             application/json:
               schema:
                 $ref: ./schemas.yaml#/components/schemas/Analysis
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/v1/admin/routing-rules/{id}/versions:
+    parameters:
+    - $ref: '#/components/parameters/rule_idPath'
+    get:
+      tags:
+      - Admin
+      operationId: listRoutingRuleVersions
+      summary: Read immutable routing history
+      description: Admin only. All snapshots of this logical rule, oldest first by
+        timestamp then version ID. Editing/deleting historical versions is not supported.
+      responses:
+        '200':
+          description: Immutable history.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ./schemas.yaml#/components/schemas/routing_rule_versions
         '401':
           $ref: '#/components/responses/Error'
         '403':

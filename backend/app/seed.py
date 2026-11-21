@@ -54,6 +54,9 @@ def main() -> None:
     try:
         with Session(engine) as session, session.begin():
             seed(session, settings.demo_password.get_secret_value())
+            from app.routing import seed_demo_routing
+
+            seed_demo_routing(session)
         print("Synthetic demo fixtures are ready; existing passwords were preserved.")
     finally:
         engine.dispose()

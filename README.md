@@ -38,9 +38,12 @@ entire contract. Private evidence upload/list/metadata/download are implemented;
 [backend/EVIDENCE.md](backend/EVIDENCE.md) for migration 0003, persistent storage and local checks.
 Readiness now also checks private storage writability. Saved-case Gemini text assessment and
 owner-only result recovery are implemented; see [backend/CASE_ANALYSIS.md](backend/CASE_ANALYSIS.md)
-for explicit provider permission, migration 0004, current routing hard stops and local checks.
+for explicit provider permission, migration 0004 and local checks. The user confirmed this live
+Gemini API assessment works. Versioned routing, immutable history, route-aware readiness and
+unconfirmed structured review drafts are implemented in migration 0005; follow
+[backend/ROUTING.md](backend/ROUTING.md) for seeding and the Admin rule-change demo.
 [The pre-analysis audit](backend/ITERATION_3_REVIEW.md) records a reproduced PDF validation fix
-and the verification boundaries. Routing, the full AI/voice flow, LangGraph, mock submission,
+and the verification boundaries. The full integrated voice flow, LangGraph, mock submission,
 officer decisions, notifications, API keys and complete audit browsing
 remain to be implemented. See [backend/ROADMAP.md](backend/ROADMAP.md).
 

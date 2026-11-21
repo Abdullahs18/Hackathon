@@ -62,6 +62,8 @@ def helper_scopes(session: Session, user: User, case: Complaint) -> set[str]:
 
 
 def officer_scopes(session: Session, user: User, case: Complaint) -> set[str]:
+    from app.routing import pinned_snapshot
+
     require_role(user, "Officer")
     assignment = session.get(CaseAssignment, case.complaint_id, populate_existing=True)
     if (
@@ -70,6 +72,7 @@ def officer_scopes(session: Session, user: User, case: Complaint) -> set[str]:
         or assignment.workspace_id != user.workspace_id
         or case.destination_workspace_id != user.workspace_id
         or case.current_status not in OFFICER_VISIBLE
+        or pinned_snapshot(session, case) is None
     ):
         raise HTTPException(403, "A submitted assigned case in your workspace is required.")
     scopes = consent_scopes(session, case, f"workspace:{user.workspace_id}", "complaint_submission")
