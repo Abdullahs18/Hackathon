@@ -27,25 +27,39 @@ FACTS = {
 
 
 def run_demo(client, password, speaker, output_dir=None):
-    def request(method, path, **kwargs):
-        response = client.request(method, path, **kwargs)
+    def progress(stage):
+        print(json.dumps({"stage": stage}), flush=True)
+
+    def request(method, path, *, stage, **kwargs):
+        progress(stage)
+        try:
+            response = client.request(method, path, **kwargs)
+        except httpx2.TransportError:
+            raise RuntimeError(
+                f"Local API connection/timeout failed during {stage}. "
+                "Recover the printed case ID before retrying; provider work may have been saved."
+            ) from None
         if response.status_code >= 400:
             raise RuntimeError(
-                f"{method} failed with HTTP {response.status_code}. Recover the printed case ID."
+                f"{stage} failed with HTTP {response.status_code}. Recover the printed case ID."
             )
         return response
 
     login = request(
-        "POST", "/api/v1/auth/login", json={"user_id": "demo-citizen-1", "password": password}
+        "POST",
+        "/api/v1/auth/login",
+        stage="login",
+        json={"user_id": "demo-citizen-1", "password": password},
     ).json()
     client.headers.update({"Authorization": "Bearer " + login["access_token"]})
     case = request(
         "POST",
         "/api/v1/complaints",
+        stage="create_synthetic_draft",
         json={"description": "Synthetic live Urdu voice workflow check."},
     ).json()
     identity = case["complaint_id"]
-    print(json.dumps({"stage": "synthetic_draft_created", "complaint_id": identity}))
+    print(json.dumps({"stage": "synthetic_draft_created", "complaint_id": identity}), flush=True)
     root = f"/api/v1/complaints/{identity}"
     for recipient, purpose, scopes in [
         ("service:gemini-voice", "voice_processing", ["voice_audio", "voice_transcript"]),
@@ -54,12 +68,22 @@ def run_demo(client, password, speaker, output_dir=None):
         request(
             "POST",
             root + "/consents",
+            stage="grant_" + purpose,
             json={"recipient": recipient, "purpose": purpose, "data_scopes": scopes},
         )
-    audio = speaker.synthesize(UTTERANCE)
+    progress("generate_synthetic_urdu_input")
+    try:
+        audio = speaker.synthesize(UTTERANCE)
+    except VoiceError:
+        raise RuntimeError(
+            "gTTS failed while generating the synthetic Urdu input audio. "
+            "Gemini transcription has not started. Check gTTS connectivity from the API container. "
+            "The printed case remains an unfiled draft."
+        ) from None
     turn = request(
         "POST",
         root + "/voice-inputs",
+        stage="transcribe_and_extract_voice",
         headers={
             "If-Match": f'"{case["version"]}"',
             "Idempotency-Key": "voice-demo-" + uuid4().hex,
@@ -72,10 +96,16 @@ def run_demo(client, password, speaker, output_dir=None):
     request(
         "POST",
         root + f"/voice-inputs/{turn['voice_turn_id']}/confirm",
+        stage="confirm_synthetic_facts",
         headers={"If-Match": f'"{case["version"]}"'},
         json={"citizen_confirmed": True, "incident_patch": FACTS},
     )
-    analysis = request("POST", root + "/analyze", json={"allow_external_processing": True}).json()
+    analysis = request(
+        "POST",
+        root + "/analyze",
+        stage="analyze_saved_case",
+        json={"allow_external_processing": True},
+    ).json()
     result = {
         "simulated": True,
         "submitted": False,
@@ -88,17 +118,18 @@ def run_demo(client, password, speaker, output_dir=None):
     }
     if not result["review_ready"]:
         return result
-    current = request("GET", root).json()
+    current = request("GET", root, stage="read_current_case").json()
     speech = request(
         "POST",
         root + "/speech",
+        stage="generate_spoken_review",
         headers={
             "If-Match": f'"{current["version"]}"',
             "Idempotency-Key": "voice-review-" + uuid4().hex,
         },
         json={"kind": "review", "allow_external_processing": True},
     ).json()
-    received = request("GET", speech["audio_path"])
+    received = request("GET", speech["audio_path"], stage="download_review_audio")
     if not received.headers.get("content-type", "").startswith("audio/mpeg"):
         raise RuntimeError("Review audio response did not contain MP3.")
     with tempfile.NamedTemporaryFile(

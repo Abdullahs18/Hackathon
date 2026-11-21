@@ -34,6 +34,20 @@ quota failure or changed routing policy can prevent that result; inspect the pri
 and saved progress rather than repeatedly creating drafts. No hidden provider retry is performed.
 The fake-provider regression suite does not prove live Urdu accuracy or playback quality.
 
+The helper prints fixed stage names before each API/provider step. If it fails at
+`generate_synthetic_urdu_input`, gTTS could not produce the test input and Gemini has not been
+called. Check that service directly from the existing API container:
+
+```powershell
+docker compose exec api python -c "from app.voice.providers import GTTSSpeaker; audio=GTTSSpeaker().synthesize('Synthetic voice connectivity check'); print('gTTS OK:', len(audio), 'bytes')"
+```
+
+A successful result prints `gTTS OK` with a positive byte count. A safe `VoiceError` identifies
+a speech-provider failure. This probe uses fixed synthetic text and no Gemini key. An API
+connection/timeout error names the API stage instead; inspect the printed case's saved voice
+history before rerunning work that may already have completed. The older generic message
+`Voice provider or local API connection failed` cannot distinguish these two causes.
+
 To listen, use the exact `/tmp/...mp3` path printed by the container:
 
 ```powershell
