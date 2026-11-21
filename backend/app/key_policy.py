@@ -61,6 +61,21 @@ for scope, operations in {
 }.items():
     OPERATION_SCOPES.update({operation: scope for operation in operations.split()})
 
+OPERATION_SCOPES.update(
+    {name: "complaints:read" for name in ["listVoiceInputs", "getVoiceInput", "getCaseSpeechAudio"]}
+)
+OPERATION_SCOPES.update(
+    {
+        name: "complaints:write"
+        for name in [
+            "createVoiceInput",
+            "retryVoiceExtraction",
+            "confirmVoiceInput",
+            "createCaseSpeech",
+        ]
+    }
+)
+
 # Evidence URLs are shared by owners, authorized Helpers and assigned Officers.
 for operation in ["listEvidence", "getEvidence", "downloadEvidence"]:
     OPERATION_SCOPES[operation] = {"complaints:read", "helper:access", "officer:access"}

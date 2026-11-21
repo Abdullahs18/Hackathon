@@ -19,6 +19,9 @@ components:
       - incident_data.suspect_details
       - incident_data.citizen_confirmed_corrections
       - identity_reference
+      - voice_audio
+      - voice_transcript
+      - spoken_text
       description: case_status shares the case envelope. incident_data shares incident fields except evidence_ids;
         evidence shares evidence IDs/access. Individual incident_data.field scopes narrow incident sharing.
         These are data scopes, separate from API-key scopes.
@@ -30,6 +33,8 @@ components:
       - mock_identity_check
       - mock_payment_lookup
       - mock_requirements_lookup
+      - voice_processing
+      - speech_synthesis
       description: helper_assistance uses user:<helper_id>; complaint_submission uses workspace:<id>.
         Mock purposes use service:mock-identity, service:mock-payment and service:mock-data respectively.
     HelperGrantCreate:
@@ -1792,3 +1797,235 @@ components:
           - unknown_warning
         explanation:
           type: string
+    VoiceInput:
+      type: object
+      additionalProperties: false
+      required:
+      - voice_turn_id
+      - complaint_id
+      - input_version
+      - status
+      - next_step
+      - transcript
+      - confirmed_transcript
+      - extraction
+      - model
+      - error_code
+      - applied_version
+      - requires_citizen_review
+      - submitted
+      - created_at
+      - updated_at
+      properties:
+        voice_turn_id:
+          type: string
+        complaint_id:
+          type: string
+        input_version:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum:
+          - PROCESSING
+          - READY
+          - FAILED
+          - STALE
+          - APPLIED
+        next_step:
+          type: string
+          enum:
+          - transcribe
+          - extract
+          - done
+        transcript:
+          type: string
+          nullable: true
+          maxLength: 12000
+        confirmed_transcript:
+          type: string
+          nullable: true
+          maxLength: 12000
+        extraction:
+          type: object
+          nullable: true
+          description: Validated VoiceExtraction proposal. Unknown values remain unknown. Readiness and
+            citizen filing authority are not inferred.
+          additionalProperties: false
+          required:
+          - incident_data
+          - spoken_summary_ur
+          - uncertainties
+          properties:
+            incident_data:
+              $ref: '#/components/schemas/IncidentInformation'
+            spoken_summary_ur:
+              type: string
+              minLength: 1
+              maxLength: 2000
+            uncertainties:
+              type: array
+              items:
+                type: string
+        model:
+          type: string
+          nullable: true
+        error_code:
+          type: string
+          nullable: true
+        applied_version:
+          type: integer
+          minimum: 1
+          nullable: true
+        requires_citizen_review:
+          type: boolean
+          enum:
+          - true
+        submitted:
+          type: boolean
+          enum:
+          - false
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    VoiceIncidentPatch:
+      type: object
+      description: Partial incident record. Omit uncollected fields. Use null for unknown values. An approximate
+        date may be supplied as text.
+      additionalProperties: false
+      properties:
+        incident_type:
+          type: string
+          maxLength: 200
+          nullable: true
+        incident_date:
+          type: string
+          maxLength: 12000
+          description: Exact or approximate date as supplied.
+          nullable: true
+        description:
+          type: string
+          maxLength: 12000
+          nullable: true
+        scam_message:
+          type: string
+          maxLength: 12000
+          nullable: true
+        platform:
+          type: string
+          maxLength: 12000
+          nullable: true
+        money_lost:
+          type: boolean
+          nullable: true
+        amount:
+          type: number
+          nullable: true
+        currency:
+          type: string
+          maxLength: 12000
+          nullable: true
+        payment_method:
+          type: string
+          maxLength: 12000
+          nullable: true
+        transaction_reference:
+          type: string
+          maxLength: 12000
+          nullable: true
+        suspect_details:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+          description: Reported phone numbers, URLs, accounts or profiles.
+          nullable: true
+      minProperties: 1
+    VoiceConfirmation:
+      type: object
+      additionalProperties: false
+      required:
+      - citizen_confirmed
+      - incident_patch
+      properties:
+        citizen_confirmed:
+          type: boolean
+          enum:
+          - true
+        incident_patch:
+          $ref: '#/components/schemas/VoiceIncidentPatch'
+        transcript_correction:
+          type: string
+          minLength: 1
+          maxLength: 12000
+        correction_note:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    SpeechRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - allow_external_processing
+      properties:
+        kind:
+          type: string
+          enum:
+          - voice_summary
+          - follow_up
+          - review
+        allow_external_processing:
+          type: boolean
+          enum:
+          - true
+        voice_turn_id:
+          type: string
+          format: uuid
+        question_index:
+          type: integer
+          minimum: 0
+          maximum: 4
+    SpeechOutput:
+      type: object
+      additionalProperties: false
+      required:
+      - speech_id
+      - complaint_id
+      - case_version
+      - kind
+      - text_ur
+      - audio_path
+      - simulated
+      - submitted
+      properties:
+        speech_id:
+          type: string
+        complaint_id:
+          type: string
+        case_version:
+          type: integer
+          minimum: 1
+        kind:
+          type: string
+          enum:
+          - voice_summary
+          - follow_up
+          - review
+        text_ur:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        audio_path:
+          type: string
+        simulated:
+          type: boolean
+          enum:
+          - true
+        submitted:
+          type: boolean
+          enum:
+          - false

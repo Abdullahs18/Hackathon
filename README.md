@@ -31,10 +31,9 @@ Case drafts, helper grants, scoped consent and officer access are now implemente
 retry/version semantics and local checks. [The iteration review](backend/ITERATION_2_REVIEW.md)
 records plan alignment, the confirmed live voice proof, fixes and remaining gaps.
 
-The canonical contract includes future endpoints. They are not implemented stubs and return 404
-until built. Scoped application keys are now implemented; use `X-API-Key` or a JWT, one at a time.
-Swagger currently lists the implemented subset at `/docs`; it is not a completion claim for the
-entire contract. Private evidence upload/list/metadata/download are implemented; see
+All 64 current canonical operations are implemented and listed at `/docs`. Frontend integration
+and final MVP acceptance remain pending. Scoped application keys are implemented; use `X-API-Key`
+or a JWT, one at a time. Private evidence upload/list/metadata/download are implemented; see
 [backend/EVIDENCE.md](backend/EVIDENCE.md) for migration 0003, persistent storage and local checks.
 Readiness now also checks private storage writability. Saved-case Gemini text assessment and
 owner-only result recovery are implemented; see [backend/CASE_ANALYSIS.md](backend/CASE_ANALYSIS.md)
@@ -54,8 +53,10 @@ Follow [backend/OFFICER_REVIEW.md](backend/OFFICER_REVIEW.md) for assignment, de
 the transition table and withdrawal checks. Scoped, hashed, expiring/revocable API keys and safe
 Admin audit/agent inspection are implemented in migration 0008. Follow
 [backend/API_KEYS_AND_AUDIT.md](backend/API_KEYS_AND_AUDIT.md) for JWT-only self-issuance, scope
-boundaries, revocation and safe trace pagination. All current contract operations are implemented;
-the full integrated voice flow and frontend/mock-server stabilization checks remain pending.
+boundaries, revocation and safe trace pagination. Persisted Urdu voice input, explicit citizen
+correction, spoken follow-ups and saved-fact review are implemented in migration 0009. Follow
+[backend/INTEGRATED_VOICE.md](backend/INTEGRATED_VOICE.md) for the seven new operations, recovery,
+frontend wiring and the one-command live-provider check. Frontend/mock-server stabilization remains pending.
 See [backend/ROADMAP.md](backend/ROADMAP.md).
 
 The latest foundation review, plan gaps, confirmed provider choices and Windows/Docker manual
@@ -63,8 +64,8 @@ checks are recorded in [backend/PLAN_AUDIT.md](backend/PLAN_AUDIT.md).
 
 Gemini/gTTS provider adapters and the local Urdu proof command are now available.
 Follow [backend/VOICE_PROOF.md](backend/VOICE_PROOF.md) to configure your key locally, select a
-model available to your free-tier project, and test a synthetic recording. This does not yet
-connect voice to persisted complaints or add voice API endpoints.
+model available to your project, and test a synthetic recording. That original CLI remains
+available; the integrated complaint workflow is documented in INTEGRATED_VOICE.md.
 
 ## Run with Docker Compose
 

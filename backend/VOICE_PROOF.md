@@ -1,8 +1,9 @@
 # Gemini + gTTS: first live Urdu proof
 
 This increment adds replaceable Gemini transcription/extraction and gTTS speech adapters, plus
-an explicit local CLI. It proves provider compatibility before case integration. The API still
-has six implemented operations. No voice REST endpoint or complaint submission is added here.
+an explicit local CLI. It originally proved provider compatibility before case integration.
+The saved-case voice endpoints are now implemented separately; see [INTEGRATED_VOICE.md](INTEGRATED_VOICE.md)
+for the current workflow and live smoke command. This document retains the original standalone proof.
 
 The shared `VoiceExtraction` schema references canonical `IncidentInformation`. Gemini is given
 a JSON Schema derived from these definitions; outputs are validated locally with JSON Schema

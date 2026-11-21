@@ -11,6 +11,7 @@ from app.analysis_routes import AnalysisGuard, provider_factory
 from app.analysis_routes import router as analysis_router
 from app.api_key_routes import router as api_key_router
 from app.case_routes import router as case_router
+from app.case_voice_routes import router as case_voice_router
 from app.config import Settings
 from app.contracts import implemented_openapi
 from app.db import make_engine
@@ -25,6 +26,7 @@ from app.routes import LoginLimiter, router
 from app.routing_routes import router as routing_router
 from app.security import password_hasher
 from app.submission_routes import router as submission_router
+from app.voice.providers import GTTSSpeaker
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -47,6 +49,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.engine = engine
     app.state.analysis_guard = AnalysisGuard()
     app.state.analysis_provider_factory = provider_factory
+    app.state.voice_provider_factory = provider_factory
+    app.state.voice_speaker_factory = GTTSSpeaker
     app.state.evidence_store = EvidenceStore(settings.evidence_dir)
     app.state.evidence_validator = EvidenceValidator()
     app.add_middleware(EvidenceBodyLimit, max_bytes=settings.evidence_max_bytes)
@@ -99,6 +103,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(notification_router)
     app.include_router(api_key_router)
     app.include_router(admin_trace_router)
+    app.include_router(case_voice_router)
 
     def openapi():
         if app.openapi_schema is None:
@@ -114,6 +119,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     *notification_router.routes,
                     *api_key_router.routes,
                     *admin_trace_router.routes,
+                    *case_voice_router.routes,
                 ]
             )
         return app.openapi_schema

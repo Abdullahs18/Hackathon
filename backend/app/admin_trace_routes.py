@@ -15,6 +15,14 @@ from app.validation import schema_definitions
 
 router = APIRouter(prefix="/api/v1/admin", tags=["Admin"])
 ACTION_MESSAGES = {
+    "voice.processing_started": "Voice processing was explicitly permitted.",
+    "voice.transcribed": "A private transcript checkpoint was saved.",
+    "voice.extracted": "An unconfirmed voice proposal was saved.",
+    "voice.confirmed": "The citizen confirmed voice facts; filing authority remains separate.",
+    "voice.processing_failed": "Voice processing stopped; saved progress was preserved.",
+    "voice.speech_started": "Spoken output processing was explicitly permitted.",
+    "voice.speech_ready": "Private speech for a saved revision was cached.",
+    "voice.speech_read": "The owner played a received speech copy.",
     "auth.login": "Account authenticated.",
     "auth.login_denied": "Authentication was denied.",
     "admin.user_created": "An account was created.",
@@ -89,6 +97,8 @@ def safe_metadata(raw):
         "api_key_id",
         "notification_id",
         "consent_id",
+        "voice_turn_id",
+        "speech_id",
     ]:
         value = opaque(source.get(name))
         if value:

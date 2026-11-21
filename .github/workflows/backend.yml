@@ -59,3 +59,6 @@ jobs:
         run: |
           docker compose run --rm --no-deps api python -c "import os; from pathlib import Path; from app.evidence_storage import EvidenceStore; assert os.getuid() == 10001; s=EvidenceStore(Path('storage/evidence')); s.check(); s.write('0'*32+'.blob',b'synthetic')"
           docker compose run --rm --no-deps api python -c "import os, hashlib; from pathlib import Path; from app.evidence_storage import EvidenceStore; assert os.getuid() == 10001; s=EvidenceStore(Path('storage/evidence')); k='0'*32+'.blob'; assert s.read(k,9,hashlib.sha256(b'synthetic').hexdigest()) == b'synthetic'; s.remove(k)"
+      - name: Verify bundled browser-audio decoder as application user
+        working-directory: .
+        run: docker run --rm dastak-backend:ci python -c "import os; assert os.getuid() == 10001; from app.voice.decoder_check import main; main()"

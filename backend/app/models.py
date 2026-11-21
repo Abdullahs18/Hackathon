@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -342,3 +343,51 @@ class ApiKey(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     create_idempotency_key: Mapped[str] = mapped_column(String(128))
     create_fingerprint: Mapped[str] = mapped_column(String(64))
+
+
+class VoiceTurn(Base):
+    __tablename__ = "voice_turns"
+    __table_args__ = (UniqueConstraint("citizen_id", "idempotency_key", name="uq_voice_request"),)
+    voice_turn_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.complaint_id"), index=True)
+    citizen_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    input_version: Mapped[int]
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    idempotency_key: Mapped[str] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(16))
+    next_step: Mapped[str] = mapped_column(String(16))
+    transcript: Mapped[str | None] = mapped_column(Text)
+    confirmed_transcript: Mapped[str | None] = mapped_column(Text)
+    extraction: Mapped[dict | None] = mapped_column(JSON(none_as_null=True))
+    model: Mapped[str | None] = mapped_column(String(200))
+    error_code: Mapped[str | None] = mapped_column(String(40))
+    applied_version: Mapped[int | None]
+    confirmation_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    consent_snapshot: Mapped[dict] = mapped_column(JSON)
+    lease_token: Mapped[str | None] = mapped_column(String(36))
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class CaseSpeech(Base):
+    __tablename__ = "case_speech"
+    __table_args__ = (UniqueConstraint("citizen_id", "idempotency_key", name="uq_speech_request"),)
+    speech_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.complaint_id"), index=True)
+    citizen_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    case_version: Mapped[int]
+    voice_turn_id: Mapped[str | None] = mapped_column(ForeignKey("voice_turns.voice_turn_id"))
+    idempotency_key: Mapped[str] = mapped_column(String(128))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    kind: Mapped[str] = mapped_column(String(20))
+    status: Mapped[str] = mapped_column(String(16))
+    text_ur: Mapped[str] = mapped_column(Text)
+    audio_data: Mapped[bytes | None] = mapped_column(LargeBinary)
+    audio_sha256: Mapped[str | None] = mapped_column(String(64))
+    error_code: Mapped[str | None] = mapped_column(String(40))
+    consent_snapshot: Mapped[dict] = mapped_column(JSON)
+    lease_token: Mapped[str | None] = mapped_column(String(36))
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
