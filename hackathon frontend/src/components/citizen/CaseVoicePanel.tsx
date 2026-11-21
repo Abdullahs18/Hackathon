@@ -130,6 +130,7 @@ export function CaseVoicePanel({complaint, ensureComplaint, onConfirmed}: Props)
       {turn.transcript && <label className="block text-sm">Review transcript
         <Textarea aria-label="Review transcript" dir="rtl" value={transcript} onChange={e => setTranscript(e.target.value)} disabled={turn.status !== 'READY'} />
       </label>}
+      {turn.status === 'READY' && <p className="text-sm">If you edit the transcript, the corrected text becomes a citizen correction included when you share incident details. An unchanged transcript stays in your private voice history.</p>}
       {turn.status !== 'READY' && turn.status !== 'APPLIED' && turn.transcript && turn.next_step === 'extract' && <Button type="button" disabled={!allowed || busy} onClick={() => void process(true)}>Retry saved extraction</Button>}
       {turn.status === 'READY' && <>
         {complaint && <UrduAudioPlayer title="Unconfirmed voice summary" urduText={turn.extraction?.spoken_summary_ur || ''} complaint={complaint} kind="voice_summary" voiceTurnId={turn.voice_turn_id} />}

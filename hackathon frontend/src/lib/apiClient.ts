@@ -841,7 +841,9 @@ export const dastakApi = {
   },
   async confirmVoiceInput(id: string, turn: VoiceInput, patch: IncidentPatch, transcript: string): Promise<ComplaintRecord> {
     const {evidence_ids: _evidence, citizen_confirmed_corrections: _corrections, ...incident_patch} = patch;
-    return fetchJson(`/api/v1/complaints/${encodeURIComponent(id)}/voice-inputs/${turn.voice_turn_id}/confirm`, {method:'POST', ifMatch:turn.input_version, body:{citizen_confirmed:true, incident_patch, transcript_correction:transcript}});
+    const body: {citizen_confirmed:true;incident_patch:IncidentPatch;transcript_correction?:string} = {citizen_confirmed:true,incident_patch};
+    if (transcript.trim() !== (turn.transcript || '').trim()) body.transcript_correction = transcript;
+    return fetchJson(`/api/v1/complaints/${encodeURIComponent(id)}/voice-inputs/${turn.voice_turn_id}/confirm`, {method:'POST', ifMatch:turn.input_version, body});
   },
   async createSpeech(id: string, body: SpeechRequest, version: number | undefined, key: string): Promise<SpeechOutput> {
     return fetchJson(`/api/v1/complaints/${encodeURIComponent(id)}/speech`, {method:'POST', body, ifMatch:savedVersion(version), idempotencyKey:key});

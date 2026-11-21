@@ -48,6 +48,8 @@ test('real login and the complete saved voice complaint flow',async({page,reques
   await panel.getByText('I reviewed these fields and want to apply these corrections.').click();
   await panel.getByRole('button',{name:'Apply reviewed voice facts'}).click();
   await expect(page.locator('#incident-description')).toHaveValue(/Citizen reports a synthetic fake aid message/);
+  const afterConfirmation=await (await request.get(API+'/api/v1/complaints/'+turn.complaint_id,{headers})).json();
+  expect(afterConfirmation.incident_data.citizen_confirmed_corrections || []).toEqual([]);
   await page.getByText('I permit this saved complaint to be sent to Gemini for analysis. This does not authorize filing.').click();
   const analyzed=page.waitForResponse(r=>r.url().endsWith('/analyze')&&r.request().method()==='POST');
   await page.getByRole('button',{name:'Save & Analyze with AI'}).click();
