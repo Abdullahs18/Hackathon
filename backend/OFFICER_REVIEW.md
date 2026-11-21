@@ -84,7 +84,9 @@ acceptance/rejection; the officer may instead escalate it. Invalid transitions r
 ## Access and recovery checks
 
 - Actions and full conversation reads require the assigned active Officer, matching workspace,
-  a valid pinned rule, `case_status` plus broad `incident_data` consent, and `evidence` consent
+  a valid pinned rule, `case_status` plus either broad `incident_data` consent or individual scopes
+  for every filed draft field (incident type, date, description, amount, currency, payment method,
+  transaction reference and suspect details), and `evidence` consent
   when evidence is attached. Status-only consent permits the scoped status view and generic
   notifications, not decisions or unfiltered review prose. Helpers cannot decide or read this
   full conversation; the owning Citizen can always recover their own received history.

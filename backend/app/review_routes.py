@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.audit import record_event
 from app.case_policy import (
+    can_read_field,
     case_view,
     locked_case,
     officer_scopes,
@@ -21,7 +22,7 @@ from app.case_policy import (
 from app.models import CaseAssignment, MockSubmission, ReviewEvent, SubmissionAuthorization, User
 from app.notifications import notify_case
 from app.security import CurrentUser, SessionDep
-from app.submission_policy import bound_payload, digest
+from app.submission_policy import DRAFT_FIELDS, bound_payload, digest
 from app.validation import validate_payload
 
 router = APIRouter(prefix="/api/v1")
@@ -65,12 +66,12 @@ MESSAGES = {
 
 def review_scope(session, user, case):
     scopes = officer_scopes(session, user, case)
-    if "incident_data" not in scopes or (
+    if any(not can_read_field(scopes, field) for field in DRAFT_FIELDS) or (
         case.incident_data.get("evidence_ids") and "evidence" not in scopes
     ):
         raise HTTPException(
             403,
-            "Review conversation requires full incident and attached-evidence consent.",
+            "Review requires consent for every filed complaint field and attached evidence.",
         )
     return scopes
 

@@ -50,7 +50,7 @@ for scope, operations in {
         "listOfficerComplaints getOfficerComplaint takeOfficerAction listOfficerReviewHistory"
     ),
     "admin:users": "listUsers createUser",
-    "admin:cases": "assignOfficer",
+    "admin:cases": "assignOfficer listAdminAssignmentQueue",
     "admin:rules": "listRoutingRules createRoutingRule updateRoutingRule listRoutingRuleVersions",
     "admin:audit": "listAudit listAgentRuns",
     "admin:api_keys": "listApiKeys createApiKey revokeApiKey",

@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.admin_assignment_routes import router as admin_assignment_router
 from app.admin_trace_routes import router as admin_trace_router
 from app.analysis_routes import AnalysisGuard, provider_factory
 from app.analysis_routes import router as analysis_router
@@ -104,6 +105,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(notification_router)
     app.include_router(api_key_router)
     app.include_router(admin_trace_router)
+    app.include_router(admin_assignment_router)
     app.include_router(case_voice_router)
 
     def openapi():

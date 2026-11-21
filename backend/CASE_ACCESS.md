@@ -37,6 +37,7 @@ Readiness now verifies that the database has reached the current Alembic migrati
 | GET | `/api/v1/officer/complaints` | Officer: assignment + workspace + current consent |
 | GET | `/api/v1/officer/complaints/{id}` | Officer: same gates, submitted/review/resolved states only |
 | POST | `/api/v1/admin/complaints/{id}/assignment` | Admin: assign an already submitted, routed, consented case |
+| GET | `/api/v1/admin/complaints` | Admin: paginated confirmed filing metadata and active officer choices; no raw case access |
 
 Together with the foundation, there are 22 implemented operations. The contract now has 41 planned
 operations, including those still unimplemented. Swagger only shows the implemented surface.
@@ -139,6 +140,17 @@ demo password. Keep tokens local. Replace `{id}` below with the returned complai
 Officer list/detail checks enforce assignment, matching officer/assignment/complaint workspace,
 submitted/review/resolved state, active account and current workspace consent. Responses are
 filtered to consented data; workspace consent withdrawal blocks access even with an assignment.
+
+The Admin dashboard discovers cases through `GET /api/v1/admin/complaints`, requiring Admin
+and `admin:cases` for API keys. The bounded metadata queue joins recorded simulated receipts;
+setting a complaint's status alone cannot put it in the queue. It returns reference, destination,
+workflow/review state, submission time, current officer and recipient-permission availability,
+plus active officer account IDs/workspaces. It excludes citizen identities, incident data, drafts,
+evidence, voice and tool payloads. `assignment=unassigned|assigned|all` filters active submitted
+cases; `limit` is 1–100 (default 25), and `before` uses the returned `next_cursor`. Cursors must
+remain within the selected filter. Withdrawal keeps the metadata visible but disables assignment;
+only a fresh successful assignment command can forward the case. Admin access to raw case data
+and evidence remains denied.
 
 The assignment endpoint returns metadata only. It requires a submitted/review case with a valid
 immutable pinned snapshot matching the destination, current workspace consent, and an active Officer

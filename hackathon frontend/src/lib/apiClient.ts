@@ -8,6 +8,7 @@ import {
 } from '@/lib/mockApi';
 import type {
   AgentRunRecord,
+  AdminAssignmentQueue,
   AgentRunSummary,
   AnalysisResponse,
   ApiErrorBody,
@@ -860,6 +861,11 @@ export const dastakApi = {
   },
   async assignOfficer(id: string, officerId: string) {
     return fetchJson(`/api/v1/admin/complaints/${encodeURIComponent(id)}/assignment`, {method:'POST', body:{officer_id:officerId}});
+  },
+  async listAssignmentQueue(assignment: 'unassigned' | 'assigned' | 'all' = 'unassigned', before?: string): Promise<AdminAssignmentQueue> {
+    const query = new URLSearchParams({assignment, limit:'25'});
+    if (before) query.set('before', before);
+    return fetchJson<AdminAssignmentQueue>('/api/v1/admin/complaints?' + query);
   },
   async listReviewEvents(id: string, officer = false): Promise<ReviewEvent[]> {
     return fetchJson(`/api/v1/${officer ? 'officer/' : ''}complaints/${encodeURIComponent(id)}/review-history`);

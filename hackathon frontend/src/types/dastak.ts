@@ -165,6 +165,23 @@ export interface CaseAssignment {
   workspace_id: string;
 }
 
+export interface AdminAssignmentCase {
+  complaint_id: string;
+  submission_reference: string;
+  destination_workspace_id: string;
+  current_status: 'SUBMITTED' | 'OFFICER_REVIEW';
+  review_outcome: ReviewOutcome;
+  submitted_at: string;
+  assigned_officer_id: string | null;
+  recipient_consent_active: boolean;
+}
+
+export interface AdminAssignmentQueue {
+  items: AdminAssignmentCase[];
+  officers: Array<{user_id: string; workspace_id: string}>;
+  next_cursor: string | null;
+}
+
 export interface EvidenceRecord {
   evidence_id: string;
   complaint_id: string;

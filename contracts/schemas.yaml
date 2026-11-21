@@ -60,6 +60,64 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+    AdminAssignmentCase:
+      type: object
+      additionalProperties: false
+      required: [complaint_id, submission_reference, destination_workspace_id, current_status, review_outcome, submitted_at, assigned_officer_id, recipient_consent_active]
+      properties:
+        complaint_id:
+          type: string
+          format: uuid
+        submission_reference:
+          type: string
+          maxLength: 100
+        destination_workspace_id:
+          type: string
+          maxLength: 100
+        current_status:
+          type: string
+          enum: [SUBMITTED, OFFICER_REVIEW]
+        review_outcome:
+          $ref: '#/components/schemas/ReviewOutcome'
+        submitted_at:
+          type: string
+          format: date-time
+        assigned_officer_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        recipient_consent_active:
+          type: boolean
+    EligibleAssignmentOfficer:
+      type: object
+      additionalProperties: false
+      required: [user_id, workspace_id]
+      properties:
+        user_id:
+          type: string
+          maxLength: 100
+        workspace_id:
+          type: string
+          maxLength: 100
+    AdminAssignmentQueue:
+      type: object
+      additionalProperties: false
+      description: Administrative filing metadata only. No citizen identity, incident facts, draft, evidence, voice or tool payloads.
+      required: [items, officers, next_cursor]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/AdminAssignmentCase'
+        officers:
+          type: array
+          items:
+            $ref: '#/components/schemas/EligibleAssignmentOfficer'
+        next_cursor:
+          type: string
+          format: uuid
+          nullable: true
     VoiceExtraction:
       type: object
       description: Unconfirmed extracted incident suggestions, a plain Urdu summary and uncertainties.

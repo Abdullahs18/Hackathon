@@ -66,11 +66,18 @@ transcript, while an unsaved transcription requires reuploading the original aud
 
 - Citizen case details expose a Helper grant plus recipient/purpose/scoped sharing. Grant both
   before signing in as `demo-helper`. Withdrawal or grant revocation blocks subsequent reads.
-- Admin assignment accepts a submitted complaint ID and an active officer ID in its pinned
-  workspace, such as `demo-officer-financial`. It grants no raw case access to Admin.
+- The Admin dashboard automatically lists confirmed submitted cases awaiting assignment. Select
+  the active officer offered for a case's pinned workspace and click **Assign officer**. No ID
+  copying is needed. Use **Assigned** to see already forwarded cases, **All active submitted cases**
+  for both, or **Refresh submitted cases** after a new filing. The queue is paginated and excludes
+  drafts and resolved cases. It shows filing metadata only; withdrawn recipient sharing disables
+  assignment. The backend rechecks consent, routing and active workspace membership when saving.
 - The assigned Officer can request information, accept, escalate, reject or close according to
   the current legal outcome. Each command carries a stable key and saved version. Citizen
   clarifications require explicit recipient-sharing permission and append to review history.
+  Full incident consent or individual consent for every filed complaint field supports these
+  actions; attached evidence still requires its own evidence scope. Partial/status-only consent
+  does not permit decisions or conversation reads.
 - Admin routing edits carry the current immutable version; history comes from the version
   endpoint. Audit/agent screens display safe metadata and fixed explanations, excluding raw facts.
 - Admin key issuance is self-issuance with role-appropriate scopes, a fixed expiry/request key

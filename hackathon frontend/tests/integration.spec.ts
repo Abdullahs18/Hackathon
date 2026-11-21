@@ -112,11 +112,24 @@ async function ready(request:APIRequestContext, filed=false, reference: string |
 
 test('Admin assigns; officer requests information; citizen replies; officer accepts and closes',async({page,request})=>{
   const {id,root,headers}=await ready(request,true);
+  const permissions=await (await request.get(root+'/consents',{headers})).json();
+  const workspace=permissions.find((row:{purpose:string})=>row.purpose==='complaint_submission');
+  const fields=['incident_type','incident_date','description','amount','currency','payment_method','transaction_reference','suspect_details'];
+  expect((await request.patch(API+'/api/v1/consents/'+workspace.consent_id,{headers,data:{data_scopes:['case_status',...fields.map(field=>'incident_data.'+field)]}})).ok()).toBe(true);
   await login(page,'demo-admin');
-  await page.getByLabel('Assignment complaint ID').fill(id);
+  const queue=page.getByRole('region',{name:'Submitted case assignment queue'});
+  const card=queue.getByRole('article',{name:'Submitted case '+id,exact:true});
+  await expect(card).toBeVisible();
+  const choices=card.getByRole('combobox');
+  await expect(choices).toHaveValue('demo-officer-financial');
+  await expect(choices.locator('option')).toHaveCount(1);
+  await expect(queue.locator('input')).toHaveCount(0);
   const assigned=page.waitForResponse(r=>r.url().endsWith('/assignment')&&r.request().method()==='POST');
-  await page.getByRole('button',{name:'Save officer assignment'}).click();
+  await card.getByRole('button',{name:'Assign officer',exact:true}).click();
   expect((await assigned).ok()).toBeTruthy();
+  await expect(card).toHaveCount(0);
+  await queue.getByLabel('Assignment queue filter').selectOption('assigned');
+  await expect(card.locator('dd').filter({hasText:'demo-officer-financial'})).toBeVisible();
   await page.evaluate(()=>sessionStorage.clear());
   await login(page,'demo-officer-financial');
   await page.goto('/officer/complaints/'+id);
@@ -171,6 +184,34 @@ test('a receipt lookup outage never creates a display reference and recovers the
   await page.reload();
   await expect(page.getByText('Simulated Complaint Submitted',{exact:true})).toBeVisible();
   await expect(page.getByText('Confirmation unavailable',{exact:false})).toHaveCount(0);
+});
+
+test('Admin queue blocks withdrawn sharing and assignment errors stay recoverable',async({page,request})=>{
+  const {id,root,headers}=await ready(request,true);
+  const current=await (await request.get(root,{headers})).json();
+  await login(page,'demo-admin');
+  const queue=page.getByRole('region',{name:'Submitted case assignment queue'});
+  const card=queue.getByRole('article',{name:'Submitted case '+id,exact:true});
+  await expect(card).toContainText(current.submission_reference);
+  await expect(queue).not.toContainText(current.incident_data.description);
+  await page.setViewportSize({width:390,height:900});
+  await expect(card).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth+1)).toBe(true);
+  expect((await card.getByRole('combobox').boundingBox())!.width).toBeGreaterThan(200);
+  await page.screenshot({path:'test-results/admin-assignment-mobile.png',fullPage:true});
+  const endpoint='**/api/v1/admin/complaints/'+id+'/assignment';
+  await page.route(endpoint,route=>route.fulfill({status:503,json:{error:'unavailable',detail:'Synthetic assignment outage'}}));
+  await card.getByRole('button',{name:'Assign officer',exact:true}).click();
+  await expect(queue.getByText('Synthetic assignment outage',{exact:true})).toBeVisible();
+  await expect(card.getByRole('button',{name:'Assign officer',exact:true})).toBeEnabled();
+  await expect(queue.getByText(/assigned to demo-officer-financial/)).toHaveCount(0);
+  await page.unroute(endpoint);
+  const permissions=await (await request.get(root+'/consents',{headers})).json();
+  const grant=permissions.find((row:{purpose:string})=>row.purpose==='complaint_submission');
+  expect((await request.post(API+'/api/v1/consents/'+grant.consent_id+'/withdraw',{headers})).ok()).toBe(true);
+  await queue.getByRole('button',{name:'Refresh submitted cases'}).click();
+  await expect(card).toContainText('Withdrawn or limited');
+  await expect(card.getByRole('button',{name:'Assign officer',exact:true})).toBeDisabled();
 });
 
 test('required sharing includes payment only with a reference and recovers partial grants',async({page,request})=>{
