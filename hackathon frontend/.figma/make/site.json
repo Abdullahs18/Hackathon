@@ -1,0 +1,10 @@
+{
+  "description": "A project setup tool that prepares imported applications for deployment and preview, helping teams verify configurations before publishing.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

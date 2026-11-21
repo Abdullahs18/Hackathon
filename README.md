@@ -7,6 +7,10 @@ The product specification is [plan.md](plan.md). Shared API contracts live in
 [contracts/openapi.yaml](contracts/openapi.yaml) and [contracts/schemas.yaml](contracts/schemas.yaml).
 Backend work is committed to **`be`**. Do not commit this work to `main`.
 
+The combined application is available on **`integration/fe-be`**. See
+[INTEGRATION.md](INTEGRATION.md) for frontend startup, the real citizen/voice workflow,
+role checks and the verification boundaries. Integration retains the current backend contracts.
+
 ## Current increment
 
 Implemented foundation: FastAPI app factory, PostgreSQL configuration, SQLAlchemy, Alembic migrations,

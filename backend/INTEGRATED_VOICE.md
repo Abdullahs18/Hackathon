@@ -1,5 +1,8 @@
 # Urdu voice in saved complaints
 
+Frontend wiring is now implemented on `integration/fe-be`; see [the combined app guide](../INTEGRATION.md).
+The original backend increment and provider-level checks are described below.
+
 Migration 0009 adds private voice turns and version-bound MP3 responses. The backend accepts
 recordings, saves transcription progress, proposes structured incident facts, accepts an explicit
 citizen correction, and speaks current follow-up questions or the saved complaint review.
@@ -169,7 +172,8 @@ client, check the response, create a Blob URL for `<audio>`, and revoke that Blo
 A plain `<audio src="/api/...">` cannot attach the Bearer/API-key header. Keep credentials out of
 URLs. A changed case version rejects old playback; regenerate against the new review.
 
-The separate frontend currently records locally and has browser speech-recognition behavior.
-This backend increment does not wire that UI. On a later integration branch, connect its recorder
-to these endpoints, show recording/upload/processing/recovery states, require explicit correction
-and final approval, and test microphone denial, refresh/retry and authenticated playback together.
+The original separate frontend recorded locally and used browser speech recognition. The
+`integration/fe-be` branch now uploads actual recorder audio, displays saved proposals, requires
+explicit correction and retrieves protected MP3 responses. Automated browser checks use synthetic
+providers; combined browser acceptance with the user's actual microphone and providers remains
+the live check described in INTEGRATION.md.

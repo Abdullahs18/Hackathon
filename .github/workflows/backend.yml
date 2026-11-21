@@ -1,7 +1,7 @@
 name: Backend checks
 on:
   push:
-    branches: [be]
+    branches: [be, "integration/**"]
   pull_request:
     paths: ["backend/**", "contracts/**", "compose.yaml", ".github/workflows/backend.yml"]
 permissions:
