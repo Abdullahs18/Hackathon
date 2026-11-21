@@ -119,6 +119,11 @@ def case_view(
     # Only the owner receives this field until a dedicated scoped draft view is defined.
     if scopes is None and case.complaint_draft is not None:
         view["complaint_draft"] = case.complaint_draft
+    if scopes is None:
+        view["authorization_id"] = case.authorization_id
+        view["agent_run_id"] = case.agent_run_id
+    if case.submission_reference:
+        view["submission_reference"] = case.submission_reference
     return view
 
 

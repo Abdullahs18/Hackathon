@@ -130,9 +130,10 @@ The small demo seeds support the feature; the full dataset/knowledge collection 
 
 Do not edit database statuses to simulate submission. Officer assignment still requires a
 submitted/review case, a valid pinned snapshot and current workspace consent. Automated policy
-fixtures explicitly synthesize submitted states; this does not claim live submission is built.
+fixtures explicitly synthesize submitted states. The citizen-authorized simulated submission flow
+is now implemented separately; follow SUBMISSION.md to create a submitted case through the API.
 
 User-confirmed live Gemini assessment succeeded before this increment. Automated routing tests
 use a fake provider, exercise real API/DB policies and make no paid calls. The live Admin rule-change
-demo above remains a separate local check. Frontend rule editor integration and contract-owner
+demo above has since passed according to the user's live check. Frontend rule editor integration and contract-owner
 review remain team checkpoints; backend conformance alone does not claim those passed.

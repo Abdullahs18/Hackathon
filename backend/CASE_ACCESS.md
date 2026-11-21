@@ -143,12 +143,12 @@ The assignment endpoint returns metadata only. It requires a submitted/review ca
 immutable pinned snapshot matching the destination, current workspace consent, and an active Officer
 in that workspace. Unknown legacy version identifiers do not satisfy this gate. It cannot turn a
 draft into a submitted case. On a fresh manual draft, assignment returns 409 and Officer lists
-remain empty. Automated policy tests use explicitly synthetic submitted-case fixtures; they do
-not stand in for the future live routing/authorization/submission workflow. Do not edit database
-statuses manually to pretend that submission works.
+remain empty. Automated policy tests use explicitly synthetic submitted-case fixtures. For the
+actual citizen-authorized simulated submission flow now implemented, follow SUBMISSION.md.
+Do not edit database statuses manually to pretend that submission works.
 
 Protected evidence uploads/retrieval were added in the next increment; see EVIDENCE.md.
-Still pending: persisted AI analysis/follow-ups, normalized
-classification, immutable routing versions, citizen submission authorization, LangGraph/state,
-typed mock services/idempotent filing, officer decisions, notifications, API keys, complete audit
-inspection, pinned mock-server verification and the team frontend integration checkpoints.
+Saved AI analysis/classification, immutable routing and citizen-authorized LangGraph/mock filing
+are implemented in later increments; see CASE_ANALYSIS.md, ROUTING.md and SUBMISSION.md.
+Still pending: integrated audio/playback, officer decisions, notifications, API keys, complete
+audit inspection, pinned mock-server verification and the team frontend integration checkpoints.

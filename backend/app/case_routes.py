@@ -65,6 +65,13 @@ def grant_view(grant: AccessGrant) -> dict:
 
 
 def validate_recipient(session: Session, recipient: str, purpose: str) -> None:
+    services = {
+        "service:mock-identity": "mock_identity_check",
+        "service:mock-payment": "mock_payment_lookup",
+        "service:mock-data": "mock_requirements_lookup",
+    }
+    if recipient in services and services[recipient] == purpose:
+        return
     if recipient.startswith("user:") and purpose == "helper_assistance":
         helper = session.get(User, recipient.removeprefix("user:"))
         if helper and helper.active and helper.role == "Helper":

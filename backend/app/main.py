@@ -20,6 +20,7 @@ from app.evidence_validation import EvidenceValidator
 from app.routes import LoginLimiter, router
 from app.routing_routes import router as routing_router
 from app.security import password_hasher
+from app.submission_routes import router as submission_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -88,6 +89,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(evidence_router)
     app.include_router(analysis_router)
     app.include_router(routing_router)
+    app.include_router(submission_router)
 
     def openapi():
         if app.openapi_schema is None:
@@ -98,6 +100,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     *evidence_router.routes,
                     *analysis_router.routes,
                     *routing_router.routes,
+                    *submission_router.routes,
                 ]
             )
         return app.openapi_schema

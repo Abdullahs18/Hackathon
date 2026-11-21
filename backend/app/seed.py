@@ -57,6 +57,9 @@ def main() -> None:
             from app.routing import seed_demo_routing
 
             seed_demo_routing(session)
+            from app.mock_services import seed_mock_services
+
+            seed_mock_services(session)
         print("Synthetic demo fixtures are ready; existing passwords were preserved.")
     finally:
         engine.dispose()

@@ -115,9 +115,10 @@ docker compose ps -a
 
 Automated tests use a fake provider and make no paid/external calls. The user confirmed both the
 CLI provider proof and the saved-case API Gemini assessment worked locally. The routing rule-change
-demo remains a separate local verification; automated success does not claim it was performed.
+demo has subsequently passed according to the user's live check.
 
-Still pending: integrated voice/audio endpoints and playback, LangGraph/mock submission, explicit final
-authorization, officer decisions, notifications, API keys, complete audit browsing, frontend
+Explicit final authorization and the durable LangGraph/mock submission flow are now implemented;
+see SUBMISSION.md. Still pending: integrated voice/audio endpoints and playback, officer decisions,
+notifications, API keys, complete audit browsing, frontend
 integration checkpoints and pinned mock-server validation. RAG remains a bounded extension after
 the core reporting flow works; the full dataset/knowledge collection will use a separate branch.

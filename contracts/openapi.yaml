@@ -676,9 +676,12 @@ paths:
       - Citizen complaints
       operationId: authorizeSubmission
       summary: Authorize the reviewed complaint
-      description: Citizen who owns the case. Requires review and active consent covering
-        the recipient, data and purpose. Record explicit authorization and recheck
-        consent before sharing.
+      description: Owning Citizen only. Confirm citizen_confirmed=true and citizen_authorized=true
+        for reviewed_version. Requires a current CITIZEN_REVIEW draft, valid pinned
+        route, no hard stops, and current scoped consent for the destination and each
+        required simulated service. Binds the exact payload and relevant consent snapshots.
+        Replays of the same active approval return the current case. Never files by
+        itself.
       requestBody:
         required: true
         content:
@@ -701,6 +704,10 @@ paths:
         '404':
           $ref: '#/components/responses/Error'
         '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '503':
           $ref: '#/components/responses/Error'
   /api/v1/complaints/{id}/consents:
     parameters:
@@ -1276,7 +1283,10 @@ paths:
       summary: Look up a simulated identity
       description: Admin within authorized mock-service scope, or an allowlisted agent
         acting for the Citizen on their own case. Bind the synthetic reference to
-        the relevant user and check consent.
+        the relevant user and check consent. Citizen REST reads require complaint_id,
+        a current approved own-case binding and the service-specific consent. Admin
+        access is restricted to synthetic fixture data. Every successful fixture response
+        is explicitly simulated.
       responses:
         '200':
           description: Success.
@@ -1292,6 +1302,23 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: complaint_id
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 36
+        description: Required for Citizen access, bound to an active approved own
+          case and scoped service consent. Admin may inspect synthetic fixtures without
+          a case context.
   /api/v1/mock/payments/transactions/{reference}:
     parameters:
     - $ref: '#/components/parameters/transaction_referencePath'
@@ -1303,7 +1330,10 @@ paths:
       description: Admin within authorized mock-service scope, or an allowlisted agent
         acting for the Citizen on their own case. Check consent and case scope. For
         a missing fixture, 404 carries error = not_found. A lookup miss does not invalidate
-        the reported transaction.
+        the reported transaction. Citizen REST reads require complaint_id, a current
+        approved own-case binding and the service-specific consent. Admin access is
+        restricted to synthetic fixture data. Every successful fixture response is
+        explicitly simulated.
       responses:
         '200':
           description: Success.
@@ -1319,6 +1349,23 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: complaint_id
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 36
+        description: Required for Citizen access, bound to an active approved own
+          case and scoped service consent. Admin may inspect synthetic fixtures without
+          a case context.
   /api/v1/mock/data/requirements/{incident_type}:
     parameters:
     - $ref: '#/components/parameters/incident_typePath'
@@ -1328,7 +1375,10 @@ paths:
       operationId: getMockRequirements
       summary: Read simulated reporting requirements
       description: Admin within mock-service scope, or an allowlisted agent acting
-        for the Citizen on their own case.
+        for the Citizen on their own case. Citizen REST reads require complaint_id,
+        a current approved own-case binding and the service-specific consent. Admin
+        access is restricted to synthetic fixture data. Every successful fixture response
+        is explicitly simulated.
       responses:
         '200':
           description: Success.
@@ -1344,18 +1394,34 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: complaint_id
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 36
+        description: Required for Citizen access, bound to an active approved own
+          case and scoped service consent. Admin may inspect synthetic fixtures without
+          a case context.
   /api/v1/mock/complaints:
     post:
       tags:
       - Mock services
       operationId: submitMockComplaint
       summary: Submit an authorized simulated complaint
-      description: Citizen through the allowlisted agent acting on the owner’s explicit
-        authorization. Check current consent and validate the reviewed draft. Bind
-        the key to the caller, complaint and authorized payload. Atomically record
-        a single result. Reuse the prior result for an identical replay and return
-        409 for a conflicting reuse. After an uncertain outcome, check by key before
-        retrying. Admin management conveys no filing authority.
+      description: Owning Citizen only. This public adapter validates the exact approved
+        payload and drives the same constrained workflow as /complaints/{id}/submit;
+        it cannot bypass identity/requirements checks or citizen authorization. Admin
+        cannot file. Same key checks prior outcome before a new write. All results
+        are simulated.
       requestBody:
         required: true
         content:
@@ -1385,14 +1451,20 @@ paths:
           $ref: '#/components/responses/Error'
         '409':
           $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
       parameters:
       - name: Idempotency-Key
         in: header
         required: true
-        description: Reuse this opaque key for retries of the same authorized submission.
         schema:
           type: string
           minLength: 1
+          maxLength: 128
   /api/v1/mock/complaints/by-idempotency-key/{key}:
     parameters:
     - $ref: '#/components/parameters/idempotency_keyPath'
@@ -1401,9 +1473,11 @@ paths:
       - Mock services
       operationId: findMockSubmission
       summary: Check a simulated submission before retry
-      description: Citizen through the allowlisted agent acting for the owner, or
-        Admin within authorized mock-service scope. Check caller, complaint access
-        and active consent before returning the prior confirmation.
+      description: Owning Citizen only. Check the simulated recipient confirmation
+        by caller-bound key. Current authorization binding and relevant recipient
+        consent are required for this service read; withdrawal blocks new service
+        reads. Admin management grants no case-confirmation bypass. Citizens retain
+        their own already-saved case/run copy.
       responses:
         '200':
           description: Success.
@@ -1418,6 +1492,10 @@ paths:
         '403':
           $ref: '#/components/responses/Error'
         '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
           $ref: '#/components/responses/Error'
   /api/v1/notifications:
     get:
@@ -1515,6 +1593,206 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+  /api/v1/complaints/{id}/authorization:
+    parameters: &id003
+    - $ref: '#/components/parameters/complaint_idPath'
+    get:
+      tags:
+      - Citizen complaints
+      operationId: getSubmissionAuthorization
+      summary: Read the current submission approval
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/AuthorizationView
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+  /api/v1/complaints/{id}/authorization/revoke:
+    parameters: *id003
+    post:
+      tags:
+      - Citizen complaints
+      operationId: revokeSubmissionAuthorization
+      summary: Revoke an unfiled approval and return to draft
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/complaints
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+  /api/v1/complaints/{id}/submit:
+    parameters: *id003
+    post:
+      tags:
+      - Citizen complaints
+      operationId: executeSubmission
+      summary: Run or resume authorized simulated submission
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/SubmissionExecution
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/components/schemas/ExecuteSubmission
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+      description: 'Owning Citizen only. Run the fixed LangGraph identity/payment/requirements/filing/verification
+        workflow after explicit approval. SQL checkpoints and a bounded execution
+        lease support safe resume. One key per approval, bound to principal/case/approved
+        payload; conflicting reuse is 409. Every sensitive step checks current account,
+        case binding and relevant consent. Persisted flags never substitute for authorization.
+        Unknown payment references are warnings, not proof of invalidity. An uncertain
+        save returns 503: read saved progress/confirmation before retrying the same
+        key. Completed owner-side results may be read from the saved copy without
+        repeating service access.'
+  /api/v1/complaints/{id}/agent-runs:
+    parameters:
+    - $ref: '#/components/parameters/complaint_idPath'
+    get:
+      tags:
+      - Citizen complaints
+      operationId: listCitizenAgentRuns
+      summary: List own agent runs
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ./schemas.yaml#/components/schemas/agent_runs
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      description: Owning Citizen only. Protected progress/history with live authorization
+        and consent flags reconciled from the database. No Helper/Officer/Admin raw-state
+        bypass.
+  /api/v1/complaints/{id}/agent-runs/{run_id}:
+    parameters:
+    - $ref: '#/components/parameters/complaint_idPath'
+    - name: run_id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    get:
+      tags:
+      - Citizen complaints
+      operationId: getCitizenAgentRun
+      summary: Read own saved agent progress
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/agent_runs
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      description: Owning Citizen only. Protected progress/history with live authorization
+        and consent flags reconciled from the database. No Helper/Officer/Admin raw-state
+        bypass.
 components:
   securitySchemes:
     BearerAuth:

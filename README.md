@@ -43,9 +43,14 @@ Gemini API assessment works. Versioned routing, immutable history, route-aware r
 unconfirmed structured review drafts are implemented in migration 0005; follow
 [backend/ROUTING.md](backend/ROUTING.md) for seeding and the Admin rule-change demo.
 [The pre-analysis audit](backend/ITERATION_3_REVIEW.md) records a reproduced PDF validation fix
-and the verification boundaries. The full integrated voice flow, LangGraph, mock submission,
-officer decisions, notifications, API keys and complete audit browsing
-remain to be implemented. See [backend/ROADMAP.md](backend/ROADMAP.md).
+and the verification boundaries. The user confirmed the live routing checks passed.
+Explicit citizen approval, scoped simulated services, a fixed LangGraph workflow with durable SQL
+progress and idempotent simulated filing/confirmation are implemented in migration 0006. Follow
+[backend/SUBMISSION.md](backend/SUBMISSION.md) for the update commands, consent bodies, approval,
+submission, retries and withdrawal checks. [The submission review](backend/ITERATION_5_REVIEW.md)
+records the persistence and verification boundaries. The full integrated voice flow, officer
+decisions, notifications, API keys and complete audit browsing remain to be implemented.
+See [backend/ROADMAP.md](backend/ROADMAP.md).
 
 The latest foundation review, plan gaps, confirmed provider choices and Windows/Docker manual
 checks are recorded in [backend/PLAN_AUDIT.md](backend/PLAN_AUDIT.md).

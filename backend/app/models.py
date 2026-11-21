@@ -74,6 +74,9 @@ class Complaint(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     create_idempotency_key: Mapped[str | None] = mapped_column(String(128))
     create_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    authorization_id: Mapped[str | None] = mapped_column(String(36))
+    agent_run_id: Mapped[str | None] = mapped_column(String(36))
+    submission_reference: Mapped[str | None] = mapped_column(String(100))
 
 
 class AccessGrant(Base):
@@ -170,6 +173,98 @@ class CaseAnalysis(Base):
     input_version: Mapped[int]
     result_version: Mapped[int]
     result: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class MockIdentity(Base):
+    __tablename__ = "mock_identities"
+    identity_reference: Mapped[str] = mapped_column(String(100), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"), unique=True)
+
+
+class MockPayment(Base):
+    __tablename__ = "mock_payments"
+    transaction_reference: Mapped[str] = mapped_column(String(128), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    amount: Mapped[float]
+    currency: Mapped[str] = mapped_column(String(20))
+    payment_method: Mapped[str | None] = mapped_column(String(100))
+
+
+class MockRequirements(Base):
+    __tablename__ = "mock_requirements"
+    incident_type: Mapped[str] = mapped_column(String(200), primary_key=True)
+    requirements: Mapped[list] = mapped_column(JSON)
+    available_fields: Mapped[list] = mapped_column(JSON)
+
+
+class SubmissionAuthorization(Base):
+    __tablename__ = "submission_authorizations"
+    __table_args__ = (
+        UniqueConstraint("complaint_id", "reviewed_version", name="uq_review_approval"),
+    )
+    authorization_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.complaint_id"), index=True)
+    citizen_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    analysis_id: Mapped[str] = mapped_column(ForeignKey("case_analyses.analysis_id"))
+    reviewed_version: Mapped[int]
+    expected_version: Mapped[int]
+    payload: Mapped[dict] = mapped_column(JSON)
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    consent_snapshot: Mapped[dict] = mapped_column(JSON)
+    authorized_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AgentRun(Base):
+    __tablename__ = "agent_runs"
+    __table_args__ = (UniqueConstraint("citizen_id", "idempotency_key", name="uq_agent_key"),)
+    agent_run_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.complaint_id"), index=True)
+    citizen_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    authorization_id: Mapped[str] = mapped_column(
+        ForeignKey("submission_authorizations.authorization_id"), unique=True
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(128))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    next_step: Mapped[str] = mapped_column(String(32))
+    state: Mapped[dict] = mapped_column(JSON)
+    lease_token: Mapped[str | None] = mapped_column(String(36))
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class AgentToolCall(Base):
+    __tablename__ = "agent_tool_calls"
+    __table_args__ = (UniqueConstraint("agent_run_id", "step", name="uq_tool_step"),)
+    call_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    agent_run_id: Mapped[str] = mapped_column(ForeignKey("agent_runs.agent_run_id"), index=True)
+    step: Mapped[str] = mapped_column(String(32))
+    input: Mapped[dict] = mapped_column(JSON)
+    output: Mapped[dict] = mapped_column(JSON)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class MockSubmission(Base):
+    __tablename__ = "mock_submissions"
+    __table_args__ = (
+        UniqueConstraint("citizen_id", "idempotency_key", name="uq_submission_key"),
+        UniqueConstraint("citizen_id", "transaction_fingerprint", name="uq_submitted_transaction"),
+    )
+    submission_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.complaint_id"), unique=True)
+    citizen_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    authorization_id: Mapped[str] = mapped_column(
+        ForeignKey("submission_authorizations.authorization_id")
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(128))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    transaction_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    payload: Mapped[dict] = mapped_column(JSON)
+    destination_workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.workspace_id"))
+    rule_version_id: Mapped[str] = mapped_column(String(100))
+    submission_reference: Mapped[str] = mapped_column(String(100), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 

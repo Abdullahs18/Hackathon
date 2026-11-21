@@ -18,6 +18,7 @@ components:
       - incident_data.transaction_reference
       - incident_data.suspect_details
       - incident_data.citizen_confirmed_corrections
+      - identity_reference
       description: case_status shares the case envelope. incident_data shares incident
         fields except evidence_ids; evidence shares evidence IDs/access. Individual
         incident_data.field scopes narrow incident sharing. These are data scopes,
@@ -27,6 +28,12 @@ components:
       enum:
       - helper_assistance
       - complaint_submission
+      - mock_identity_check
+      - mock_payment_lookup
+      - mock_requirements_lookup
+      description: helper_assistance uses user:<helper_id>; complaint_submission uses
+        workspace:<id>. Mock purposes use service:mock-identity, service:mock-payment
+        and service:mock-data respectively.
     HelperGrantCreate:
       type: object
       additionalProperties: false
@@ -411,6 +418,15 @@ components:
           $ref: '#/components/schemas/IncidentInformation'
         complaint_draft:
           $ref: '#/components/schemas/ComplaintDraft'
+        authorization_id:
+          type: string
+          nullable: true
+        agent_run_id:
+          type: string
+          nullable: true
+        submission_reference:
+          type: string
+          nullable: true
     complaint_access_grants:
       type: object
       additionalProperties: false
@@ -847,6 +863,20 @@ components:
           type: array
           items:
             type: string
+        authorization_id:
+          type: string
+        next_step:
+          type: string
+        warnings:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     agent_actions:
       type: object
       description: Sanitized summaries of individual agent actions and tool calls.
@@ -912,6 +942,7 @@ components:
       - complaint_id
       - idempotency_key
       - submission_reference
+      - simulated
       properties:
         complaint_id:
           type: string
@@ -922,6 +953,10 @@ components:
         submission_reference:
           type: string
           minLength: 1
+        simulated:
+          type: boolean
+          enum:
+          - true
     SubmissionRequest:
       type: object
       additionalProperties: false
@@ -1121,6 +1156,7 @@ components:
       required:
       - identity_reference
       - user_id
+      - simulated
       properties:
         identity_reference:
           type: string
@@ -1128,6 +1164,10 @@ components:
         user_id:
           type: string
           minLength: 1
+        simulated:
+          type: boolean
+          enum:
+          - true
     mock_payment_transactions:
       type: object
       additionalProperties: false
@@ -1136,6 +1176,7 @@ components:
       - amount
       - currency
       - payment_method
+      - simulated
       properties:
         transaction_reference:
           type: string
@@ -1147,6 +1188,10 @@ components:
         payment_method:
           type: string
           nullable: true
+        simulated:
+          type: boolean
+          enum:
+          - true
     mock_reporting_requirements:
       type: object
       additionalProperties: false
@@ -1154,6 +1199,7 @@ components:
       - incident_type
       - requirements
       - available_fields
+      - simulated
       properties:
         incident_type:
           type: string
@@ -1165,6 +1211,13 @@ components:
           type: array
           items:
             type: string
+        simulated:
+          type: boolean
+          enum:
+          - true
+      description: Simulated field-name requirements, not official reporting guidance.
+        Values must be allowlisted IncidentInformation field names; no executable
+        instructions.
     Login:
       type: object
       additionalProperties: false
@@ -1231,11 +1284,23 @@ components:
       additionalProperties: false
       required:
       - citizen_authorized
+      - citizen_confirmed
+      - reviewed_version
       properties:
         citizen_authorized:
           type: boolean
           enum:
           - true
+        citizen_confirmed:
+          type: boolean
+          enum:
+          - true
+        reviewed_version:
+          type: integer
+          minimum: 1
+      description: Owning Citizen explicitly confirms and authorizes the exact reviewed
+        revision. Separate from consent grants. A changed review, route, authorization
+        or relevant consent requires renewed review/authorization.
     Analysis:
       type: object
       additionalProperties: false
@@ -1445,3 +1510,77 @@ components:
           type: string
       description: Immutable demo rule used for this assessment, or null when no valid
         route can be used. No real government filing or authority endorsement.
+    ExecuteSubmission:
+      type: object
+      additionalProperties: false
+      required:
+      - authorization_id
+      properties:
+        authorization_id:
+          type: string
+          minLength: 1
+          maxLength: 36
+    SubmissionExecution:
+      type: object
+      additionalProperties: false
+      required:
+      - simulated
+      - submitted
+      - agent_run_id
+      - current_status
+      - submission_reference
+      - warnings
+      - errors
+      properties:
+        simulated:
+          type: boolean
+          enum:
+          - true
+        submitted:
+          type: boolean
+        agent_run_id:
+          type: string
+        current_status:
+          $ref: '#/components/schemas/WorkflowStatus'
+        submission_reference:
+          type: string
+          nullable: true
+        warnings:
+          type: array
+          items:
+            type: string
+        errors:
+          type: array
+          items:
+            type: string
+    AuthorizationView:
+      type: object
+      additionalProperties: false
+      required:
+      - authorization_id
+      - complaint_id
+      - reviewed_version
+      - case_version
+      - active
+      - authorized_at
+      - revoked_at
+      properties:
+        authorization_id:
+          type: string
+        complaint_id:
+          type: string
+        reviewed_version:
+          type: integer
+          minimum: 1
+        case_version:
+          type: integer
+          minimum: 1
+        active:
+          type: boolean
+        authorized_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
