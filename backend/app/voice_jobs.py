@@ -28,12 +28,14 @@ def current_owner(session, actor_id, case_id, key_id, operation):
     return own_case(session, user, case_id)
 
 
-def service_consent(session, case, speech=False):
+def service_consent(session, case, speech=False, translation=False):
     recipient, purpose, scopes = (
         ("service:gtts", "speech_synthesis", {"spoken_text"})
         if speech
         else ("service:gemini-voice", "voice_processing", {"voice_audio", "voice_transcript"})
     )
+    if translation:
+        recipient, purpose, scopes = "service:gemini-speech", "speech_translation", {"spoken_text"}
     row = session.scalar(
         select(Consent)
         .where(

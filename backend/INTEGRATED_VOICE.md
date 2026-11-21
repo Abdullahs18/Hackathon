@@ -3,6 +3,18 @@
 Frontend wiring is now implemented on `integration/fe-be`; see [the combined app guide](../INTEGRATION.md).
 The original backend increment and provider-level checks are described below.
 
+On the integration branch, mixed-language saved reviews are prepared in Urdu before gTTS.
+The audio checkbox explicitly permits Gemini translation (only when needed) and gTTS synthesis.
+Existing Urdu framing, numeric values, dates and transaction references are masked before
+translation and restored exactly; missing, duplicated or reordered placeholders, new digits
+and untranslated English prose reject the output before speech synthesis. Reference identifiers
+may retain their original Latin spelling. This does not edit the formal complaint or authorize filing.
+The panel shows only server-prepared speech text, never a local mixed-language approximation.
+Translation is checkpointed so a speech-provider retry can reuse it; changed case versions or
+provider grants invalidate in-flight work. A mixed-language source adds one Gemini call.
+No database migration is needed. Listen to a synthetic English-description case to check live
+Urdu translation and pronunciation; synthetic-provider tests verify preservation, not language quality.
+
 Migration 0009 adds private voice turns and version-bound MP3 responses. The backend accepts
 recordings, saves transcription progress, proposes structured incident facts, accepts an explicit
 citizen correction, and speaks current follow-up questions or the saved complaint review.
@@ -88,6 +100,15 @@ Create scoped grants through the existing `POST /consents` on this complaint:
 ```json
 {"recipient":"service:gtts","purpose":"speech_synthesis","data_scopes":["spoken_text"]}
 ```
+
+Mixed-language speech additionally requires:
+
+```json
+{"recipient":"service:gemini-speech","purpose":"speech_translation","data_scopes":["spoken_text"]}
+```
+
+Already-Urdu speech needs only gTTS consent. These grants stay independent of Gemini recording
+consent and of the complaint's required-sharing bundle.
 
 Every new provider operation also requires `allow_external_processing: true`. Voice permission
 does not grant text assessment, helper access, authority access or final filing authorization.

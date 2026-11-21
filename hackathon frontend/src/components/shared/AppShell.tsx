@@ -183,7 +183,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="sticky top-0 z-40">
         <PrototypeBanner />
         <header className="border-b border-border/90 bg-card/95 shadow-[0_8px_24px_-22px_rgb(15_23_42/0.5)] backdrop-blur supports-[backdrop-filter]:bg-card/88">
-          <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
             <Link
               to={user ? getHomePathForRole(user.role) : '/login'}
               className="group flex shrink-0 items-center gap-2.5 rounded-xl focus-visible:outline-none"
@@ -203,7 +203,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
             <div className="hidden md:block md:ms-3">{nav}</div>
 
-            <div className="ms-auto flex items-center gap-2">
+            <div className="ms-auto flex w-full min-w-0 flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
               {user && <ConnectionStatusPill />}
               <LanguageSwitcher />
               <ThemeToggle />
@@ -232,7 +232,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </div>
 
-      <main className="relative mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="relative mx-auto w-full min-w-0 max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         <FadeSlide key={location.pathname} className="space-y-7 sm:space-y-8">
           {children}
         </FadeSlide>

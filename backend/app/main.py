@@ -50,6 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.analysis_guard = AnalysisGuard()
     app.state.analysis_provider_factory = provider_factory
     app.state.voice_provider_factory = provider_factory
+    app.state.speech_translation_provider_factory = provider_factory
     app.state.voice_speaker_factory = GTTSSpeaker
     app.state.evidence_store = EvidenceStore(settings.evidence_dir)
     app.state.evidence_validator = EvidenceValidator()

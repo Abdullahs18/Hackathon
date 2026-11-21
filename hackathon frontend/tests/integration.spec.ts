@@ -59,17 +59,18 @@ test('real login and the complete saved voice complaint flow',async({page,reques
   await review.getByRole('checkbox').check();
   const spokenResponse=page.waitForResponse(r=>r.url().endsWith('/speech')&&r.request().method()==='POST');
   await review.getByRole('button',{name:'Generate Urdu audio'}).click();
-  expect((await spokenResponse).ok()).toBeTruthy();
+  const spoken = await spokenResponse;
+  expect(spoken.ok()).toBeTruthy();
+  expect((await spoken.json()).text_ur).not.toMatch(/[A-Za-z]/);
+  await expect(review.getByTestId('saved-urdu-speech')).not.toContainText('Citizen reports');
   await expect(review.locator('audio')).toHaveAttribute('src',/^blob:/);
   await expect.poll(()=>review.locator('audio').evaluate((a:HTMLAudioElement)=>a.readyState)).toBeGreaterThan(0);
   await page.screenshot({path:'test-results/voice-review.png',fullPage:true});
   const consent=page.getByRole('region',{name:'Data sharing consent'});
-  for(const recipient of ['workspace:mock-financial-fraud','service:mock-identity','service:mock-data']) {
-    await consent.getByLabel('Consent recipient').selectOption(recipient);
-    const grant=page.waitForResponse(r=>r.url().endsWith('/consents')&&r.request().method()==='POST');
-    await consent.getByRole('button',{name:'Grant selected consent',exact:true}).click();
-    expect((await grant).ok()).toBeTruthy();
-  }
+  await expect(page.getByRole('button',{name:/Authorize & Submit/})).toBeDisabled();
+  await consent.getByRole('checkbox', {name:/I allow the listed required recipients/}).check();
+  await consent.getByRole('button', {name:'Allow required sharing',exact:true}).click();
+  await expect(consent.getByText(/All required sharing permissions are ready/)).toBeVisible();
   await page.getByText(/I reviewed this complaint summary and explicitly authorize/).click();
   const executionResponse=page.waitForResponse(r=>r.url().endsWith('/submit')&&r.request().method()==='POST');
   await page.getByRole('button',{name:/Authorize & Submit/}).click();
@@ -84,10 +85,10 @@ test('real login and the complete saved voice complaint flow',async({page,reques
   await expect(page.getByText('Simulated Complaint Submitted',{exact:true})).toHaveCount(0);
 });
 
-async function ready(request:APIRequestContext, filed=false) {
+async function ready(request:APIRequestContext, filed=false, reference: string | null = null) {
   const auth=await token(request);
   const headers={Authorization:'Bearer '+auth};
-  const created=await request.post(API+'/api/v1/complaints',{headers,data:{description:'Synthetic browser case '+crypto.randomUUID(),money_lost:true,amount:1500,currency:'PKR',incident_date:null,transaction_reference:null}});
+  const created=await request.post(API+'/api/v1/complaints',{headers,data:{description:'Synthetic browser case '+crypto.randomUUID(),money_lost:true,amount:1500,currency:'PKR',incident_date:null,transaction_reference:reference}});
   expect(created.ok()).toBeTruthy();
   const id=(await created.json()).complaint_id;
   const root=API+'/api/v1/complaints/'+id;
@@ -172,6 +173,49 @@ test('a receipt lookup outage never creates a display reference and recovers the
   await expect(page.getByText('Confirmation unavailable',{exact:false})).toHaveCount(0);
 });
 
+test('required sharing includes payment only with a reference and recovers partial grants',async({page,request})=>{
+  const {id,root,headers}=await ready(request,false,'DEMO-'+crypto.randomUUID());
+  const rows=await (await request.get(root+'/consents',{headers})).json();
+  const identity=rows.find((row:{purpose:string})=>row.purpose==='mock_identity_check');
+  expect((await request.post(API+'/api/v1/consents/'+identity.consent_id+'/withdraw',{headers})).ok()).toBe(true);
+  await login(page);
+  await page.goto('/citizen/complaints/'+id+'/wizard');
+  const consent=page.getByRole('region',{name:'Data sharing consent'});
+  const required=consent.locator('[aria-label="Required complaint sharing"]');
+  await expect(required).toContainText('Simulated payment lookup');
+  await expect(required).not.toContainText('Gemini');
+  const sent:string[]=[];
+  let fail=true;
+  await page.route('**/api/v1/complaints/'+id+'/consents',async route=>{
+    if(route.request().method()!=='POST')return route.continue();
+    const recipient=route.request().postDataJSON().recipient;
+    sent.push(recipient);
+    if(fail && recipient==='service:mock-payment')return route.fulfill({status:503,json:{error:'unavailable',detail:'Synthetic failure'}});
+    return route.continue();
+  });
+  await page.getByText(/I reviewed this complaint summary and explicitly authorize/).click();
+  const submit=page.getByRole('button',{name:/Authorize & Submit/});
+  await expect(submit).toBeDisabled();
+  await required.getByRole('checkbox').check();
+  await required.getByRole('button',{name:'Allow required sharing',exact:true}).click();
+  await expect(consent.getByText(/Some permissions could not be saved/)).toBeVisible();
+  await expect(submit).toBeDisabled();
+  expect(sent.sort()).toEqual(['service:mock-identity','service:mock-payment']);
+  sent.length=0;fail=false;
+  await required.getByRole('button',{name:'Allow required sharing',exact:true}).click();
+  await expect(required.getByText(/All required sharing permissions are ready/)).toBeVisible();
+  await expect(submit).toBeEnabled();
+  expect(sent).toEqual(['service:mock-payment']);
+  const record=await (await request.get(root,{headers})).json();
+  expect(record.current_status).toBe('CITIZEN_REVIEW');
+  expect(record.authorization_id).toBeFalsy();
+  const grants=await (await request.get(root+'/consents',{headers})).json();
+  expect(grants.filter((row:{status:string})=>row.status==='granted').map((row:{recipient:string})=>row.recipient).sort()).toEqual(['service:mock-data','service:mock-identity','service:mock-payment','workspace:mock-financial-fraud']);
+  await consent.getByText('Manage individual permissions and optional services',{exact:true}).click();
+  await consent.getByRole('button',{name:'Withdraw Simulated payment lookup (when a reference is supplied)',exact:true}).click();
+  await expect(submit).toBeDisabled();
+});
+
 test('a stale voice confirmation cannot overwrite a newer case edit',async({page,request})=>{
   const {id,root,headers}=await ready(request);
   const current=await (await request.get(root,{headers})).json();
@@ -190,6 +234,32 @@ test('a stale voice confirmation cannot overwrite a newer case edit',async({page
   await panel.getByRole('button',{name:'Apply reviewed voice facts'}).click();
   expect((await confirmation).status()).toBe(412);
   expect((await (await request.get(root,{headers})).json()).incident_data.description).toBe('Newer citizen edit must survive');
+});
+
+test('narrow field grants satisfy sharing and another workspace never substitutes for the route',async({page,request})=>{
+  const {id,root,headers}=await ready(request);
+  const rows=await (await request.get(root+'/consents',{headers})).json();
+  const workspace=rows.find((row:{purpose:string})=>row.purpose==='complaint_submission');
+  const fields=['incident_type','incident_date','description','amount','currency','payment_method','transaction_reference','suspect_details'];
+  expect((await request.patch(API+'/api/v1/consents/'+workspace.consent_id,{headers,data:{data_scopes:['case_status',...fields.map(field=>'incident_data.'+field)]}})).ok()).toBe(true);
+  await login(page);
+  await page.goto('/citizen/complaints/'+id+'/wizard');
+  const required=page.locator('[aria-label="Required complaint sharing"]');
+  await expect(required.getByText(/All required sharing permissions are ready/)).toBeVisible();
+  await expect(required).not.toContainText('Simulated payment lookup');
+  expect((await request.post(API+'/api/v1/consents/'+workspace.consent_id+'/withdraw',{headers})).ok()).toBe(true);
+  expect((await request.post(root+'/consents',{headers,data:{recipient:'workspace:mock-digital-safety',purpose:'complaint_submission',data_scopes:['case_status','incident_data']}})).ok()).toBe(true);
+  await page.reload();
+  await expect(required).toContainText('Mock Financial Fraud Intake — Permission needed');
+  await page.getByText(/I reviewed this complaint summary and explicitly authorize/).click();
+  await expect(page.getByRole('button',{name:/Authorize & Submit/})).toBeDisabled();
+  await required.getByRole('checkbox').check();
+  const grant=page.waitForResponse(response=>response.url().endsWith('/consents')&&response.request().method()==='POST');
+  await required.getByRole('button',{name:'Allow required sharing',exact:true}).click();
+  const response=await grant;expect(response.ok()).toBe(true);
+  expect(response.request().postDataJSON().recipient).toBe('workspace:mock-financial-fraud');
+  await expect(required.getByText(/All required sharing permissions are ready/)).toBeVisible();
+  await expect(page.getByRole('button',{name:/Authorize & Submit/})).toBeEnabled();
 });
 
 test('microphone denial keeps typed reporting available without any provider upload',async({page})=>{
@@ -252,6 +322,7 @@ test('citizen grants Helper access; revocation blocks the next Helper read',asyn
   await login(page);
   await page.goto('/citizen/complaints/'+id);
   const consent=page.getByRole('region',{name:'Data sharing consent'});
+  await consent.getByText('Manage individual permissions and optional services',{exact:true}).click();
   await consent.getByLabel('Consent recipient').selectOption('user:demo-helper');
   await consent.getByRole('button',{name:'Grant helper access and selected consent'}).click();
   await expect(consent.getByRole('button',{name:'Withdraw Demo community helper',exact:true})).toBeVisible();
@@ -262,6 +333,7 @@ test('citizen grants Helper access; revocation blocks the next Helper read',asyn
   await page.evaluate(()=>sessionStorage.clear());
   await login(page);
   await page.goto('/citizen/complaints/'+id);
+  await page.getByText('Manage individual permissions and optional services',{exact:true}).click();
   await page.getByRole('button',{name:'Withdraw Demo community helper',exact:true}).click();
   await page.evaluate(()=>sessionStorage.clear());
   await login(page,'demo-helper');
@@ -314,6 +386,24 @@ test('Admin edits append an immutable routing version through the current contra
   const history=await (await request.get(API+'/api/v1/admin/routing-rules/'+current.rule_id+'/versions',{headers})).json();
   expect(history.some((v:{rule_version_id:string})=>v.rule_version_id===original.rule_version_id)).toBe(true);
   await expect(page.getByText('Immutable Rule Version History',{exact:true})).toBeVisible();
+  const table=page.getByRole('table',{name:'Rule version history'});
+  for (const width of [1280,390]) {
+    await page.setViewportSize({width,height:900});
+    await table.scrollIntoViewIfNeeded();
+    const overlap=await table.locator('tbody td').evaluateAll(cells=>cells.some(cell=>{
+      const range=document.createRange();range.selectNodeContents(cell);
+      const text=range.getBoundingClientRect(), box=cell.getBoundingClientRect();
+      return text.left < box.left-1 || text.right > box.right+1 || text.bottom > box.bottom+1;
+    }));
+    expect(overlap).toBe(false);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth+1)).toBe(true);
+    await page.screenshot({path:'test-results/rule-history-'+width+'.png',fullPage:true});
+  }
+  await page.locator('[role="radio"][lang="ur"]').filter({visible:true}).first().click();
+  await expect(page.locator('html')).toHaveAttribute('dir','rtl');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth+1)).toBe(true);
+  await table.scrollIntoViewIfNeeded();
+  await page.screenshot({path:'test-results/rule-history-urdu.png',fullPage:true});
 });
 
 test('evidence uploads and authenticated previews preserve the original bytes',async({page,request})=>{

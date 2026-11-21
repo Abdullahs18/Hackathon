@@ -2,7 +2,8 @@
 
 Work is on `integration/fe-be`, combining backend `9c40577` and frontend `e454876`.
 The original `be`, `frontend` and `main` branches remain separate. The latest backend contracts
-are retained; neither `plan.md` nor the public API shapes are changed by this integration.
+are retained; `plan.md` remains unchanged. The consent-purpose enum also includes
+`speech_translation` for the optional Gemini Urdu preparation step.
 
 ## Run the combined application on Windows
 
@@ -40,11 +41,17 @@ mode is a legacy visual preview; acceptance checks use `false` and the actual AP
    and labeled not authenticity-verified. Original downloads use authenticated requests.
 4. Permit saved-case Gemini analysis and select Save & Analyze with AI. Answer current missing
    information through text or another reviewed recording. Unknown information can stay unknown.
-5. Once ready, open Review, Consent & Authorize. Permit gTTS processing and generate the saved
+5. Once ready, open Review, Consent & Authorize. Permit Gemini Urdu preparation when needed
+   and gTTS processing with the audio checkbox, then generate the saved
    Urdu review. Play the MP3 and compare it with the saved facts. Changed summary fields block
    authorization until saved and analyzed again; approval is reset after a case revision changes.
-6. Grant the routed workspace consent, simulated identity-check consent and reporting-requirements
-   consent individually. A payment-reference lookup additionally needs its service-specific grant.
+6. Review the required-sharing list and select **Allow required sharing** once. This saves separate
+   scoped grants for the routed workspace, simulated identity check and reporting requirements.
+   Payment lookup is included only when the case has a transaction reference. Optional helpers,
+   another workspace and voice providers are not included. Individual grants can be withdrawn
+   under **Manage individual permissions and optional services**. A partial failure shows the saved
+   grants; retry completes only missing permissions. Filing stays disabled until all required grants
+   cover the current complaint data.
 7. Explicitly authorize the saved review. The client records approval and then calls the separate
    submission endpoint with a stable command key. Only a backend reference is displayed. If a
    result is uncertain, use Check Prior Submission & Retry Safely; a display reference is never invented.

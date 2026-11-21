@@ -22,6 +22,7 @@ ACTION_MESSAGES = {
     "voice.processing_failed": "Voice processing stopped; saved progress was preserved.",
     "voice.speech_started": "Spoken output processing was explicitly permitted.",
     "voice.speech_ready": "Private speech for a saved revision was cached.",
+    "voice.speech_translated": "Saved speech text was prepared in Urdu with protected facts.",
     "voice.speech_read": "The owner played a received speech copy.",
     "auth.login": "Account authenticated.",
     "auth.login_denied": "Authentication was denied.",

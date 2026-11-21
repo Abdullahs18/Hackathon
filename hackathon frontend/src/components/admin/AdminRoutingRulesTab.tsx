@@ -357,7 +357,8 @@ export function AdminRoutingRulesTab() {
               No version snapshots recorded in audit logs yet.
             </p>
           ) : (
-            <Table>
+              <Table aria-label="Rule version history" className="min-w-[900px] table-fixed [&_td]:whitespace-normal [&_td]:break-words [&_td]:align-top [&_th]:whitespace-normal">
+                <colgroup><col className="w-[24%]" /><col className="w-[18%]" /><col className="w-[13%]" /><col className="w-[27%]" /><col className="w-[18%]" /></colgroup>
               <TableHeader>
                 <TableRow>
                   <TableHead>Version ID</TableHead>
@@ -371,7 +372,7 @@ export function AdminRoutingRulesTab() {
                 {versionHistory.map((row, idx) => (
                   <TableRow key={`${row.rule_version_id}-${idx}`}>
                     <TableCell className="font-mono text-xs font-semibold text-primary">
-                      {row.rule_version_id}
+                        <bdi dir="ltr" className="break-words">{row.rule_version_id}</bdi>
                     </TableCell>
                     <TableCell className="text-xs">
                       {row.destination
@@ -386,12 +387,12 @@ export function AdminRoutingRulesTab() {
                           : '• Inactive'
                         : ''}
                     </TableCell>
-                    <TableCell className="max-w-xs text-xs text-muted-foreground">
+                      <TableCell className="text-xs leading-relaxed text-muted-foreground">
                       {row.summary}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      <span className="font-mono">{row.actor}</span> •{' '}
-                      {formatShortTime(row.timestamp)}
+                      <bdi dir="ltr" className="block break-all font-mono">{row.actor}</bdi>
+                      <span className="mt-1 block">{formatShortTime(row.timestamp)}</span>
                     </TableCell>
                   </TableRow>
                 ))}

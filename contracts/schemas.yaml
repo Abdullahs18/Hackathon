@@ -35,8 +35,11 @@ components:
       - mock_requirements_lookup
       - voice_processing
       - speech_synthesis
+      - speech_translation
       description: helper_assistance uses user:<helper_id>; complaint_submission uses workspace:<id>.
         Mock purposes use service:mock-identity, service:mock-payment and service:mock-data respectively.
+        voice_processing uses service:gemini-voice; speech_synthesis uses service:gtts;
+        speech_translation uses service:gemini-speech with spoken_text scope.
     HelperGrantCreate:
       type: object
       additionalProperties: false
@@ -1967,6 +1970,8 @@ components:
           maxLength: 2000
     SpeechRequest:
       type: object
+      description: Speak current saved text. Mixed-language sources require scoped Gemini Urdu-translation
+        consent in addition to gTTS speech consent. Original saved complaint facts remain unchanged.
       additionalProperties: false
       required:
       - kind

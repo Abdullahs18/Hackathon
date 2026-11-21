@@ -140,6 +140,27 @@ def test_gemini_adapter_uses_schema_no_tools_and_single_attempt(provider):
     client.close.assert_called_once()
 
 
+def test_gemini_translation_uses_saved_text_schema_and_no_tools(provider):
+    adapter, client, _ = provider
+    expected = "خلاصہ __K12345678_0__"
+    client.models.generate_content.return_value = response(json.dumps({"text_ur": expected}))
+    assert adapter.translate_urdu("untrusted __K12345678_0__") == expected
+    config = client.models.generate_content.call_args.kwargs["config"]
+    assert config.response_json_schema["required"] == ["text_ur"]
+    assert config.automatic_function_calling.disable and config.tools is None
+    assert client.models.generate_content.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "text", ["null", "[]", "{}", '{"text_ur": 123}', '{"text_ur":"خلاصہ","submit":true}']
+)
+def test_gemini_translation_rejects_malformed_response(provider, text):
+    adapter, client, _ = provider
+    client.models.generate_content.return_value = response(text)
+    with pytest.raises(VoiceError):
+        adapter.translate_urdu("Saved source")
+
+
 @pytest.mark.parametrize(
     "text,finish",
     [

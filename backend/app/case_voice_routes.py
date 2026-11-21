@@ -23,6 +23,7 @@ from app.submission_policy import digest
 from app.validation import validate_payload, validate_schema
 from app.voice.audio import MAX_AUDIO_BYTES, parse_audio
 from app.voice.config import VoiceError
+from app.voice.urdu import needs_translation, prepare_translation
 from app.voice_jobs import (
     claim,
     current_owner,
@@ -295,7 +296,9 @@ def review_text(case):
         else "رقم: "
         + brief(draft.get("amount"), "معلوم نہیں")
         + " "
-        + brief(draft.get("currency"), "")
+        + {"PKR": "پاکستانی روپے", "USD": "امریکی ڈالر", "EUR": "یورو", "GBP": "برطانوی پاؤنڈ"}.get(
+            draft.get("currency"), brief(draft.get("currency"), "")
+        )
         + "۔ "
     )
     destinations = {
@@ -383,6 +386,22 @@ def valid_mp3(data):
     return data
 
 
+def speech_literals(session, case, body):
+    values = [case.incident_data.get("transaction_reference")]
+    if body["kind"] == "voice_summary":
+        turn = session.get(VoiceTurn, body.get("voice_turn_id"))
+        if turn and turn.extraction:
+            values.append(turn.extraction["incident_data"].get("transaction_reference"))
+    return tuple(value for value in values if isinstance(value, str) and value)
+
+
+def speech_consents(session, case, body, text):
+    snapshot = service_consent(session, case, speech=True)
+    if needs_translation(text, speech_literals(session, case, body)):
+        return {"gtts": snapshot, "translation": service_consent(session, case, translation=True)}
+    return snapshot
+
+
 def checked_speech(session, actor_id, case_id, identity, token, key_id, version, body, text):
     case = current_owner(session, actor_id, case_id, key_id, "createCaseSpeech")
     saved = session.get(CaseSpeech, identity, populate_existing=True)
@@ -393,7 +412,7 @@ def checked_speech(session, actor_id, case_id, identity, token, key_id, version,
         or case.version != version
     ):
         raise HTTPException(409, "Speech source or execution lease changed.")
-    if service_consent(session, case, speech=True) != saved.consent_snapshot:
+    if speech_consents(session, case, body, text) != saved.consent_snapshot:
         raise HTTPException(403, "Speech provider consent changed during synthesis.")
     current_text, _ = speech_source(session, case, body)
     if current_text != text:
@@ -418,7 +437,15 @@ def create_speech(
         text, turn_id = speech_source(session, case, body)
     except VoiceError as exc:
         public_error(exc)
-    fingerprint = digest({"case_id": id, "body": body, "if_match": if_match, "text": text})
+    fingerprint = digest(
+        {
+            "case_id": id,
+            "body": body,
+            "if_match": if_match,
+            "text": text,
+            "speech_policy": "urdu-v2",
+        }
+    )
     row = session.scalar(
         select(CaseSpeech).where(
             CaseSpeech.citizen_id == user.user_id, CaseSpeech.idempotency_key == idempotency_key
@@ -429,7 +456,8 @@ def create_speech(
             raise HTTPException(409, "Speech request key belongs to different content or version.")
         if row.status == "READY":
             return speech_view(row)
-    consent = service_consent(session, case, speech=True)
+    consent = speech_consents(session, case, body, text)
+    literals = speech_literals(session, case, body)
     with request.app.state.analysis_guard.claim(id):
         now = datetime.now(UTC)
         if row is None:
@@ -468,8 +496,34 @@ def create_speech(
         save(session)
         try:
             with Session(request.app.state.engine) as fresh:
+                saved = checked_speech(
+                    fresh, actor_id, id, identity, token, key_id, version, body, text
+                )
+                spoken = saved.text_ur
+            if needs_translation(spoken, literals):
+                prepared = prepare_translation(text, literals)
+                translator = request.app.state.speech_translation_provider_factory()
+                try:
+                    spoken = prepared.restore(translator.translate_urdu(prepared.masked))
+                finally:
+                    translator.close()
+                with Session(request.app.state.engine) as fresh:
+                    saved = checked_speech(
+                        fresh, actor_id, id, identity, token, key_id, version, body, text
+                    )
+                    saved.text_ur = spoken
+                    record_event(
+                        fresh,
+                        "voice.speech_translated",
+                        actor_id,
+                        "Saved speech text was prepared in Urdu with protected facts",
+                        complaint_id=id,
+                        details={"speech_id": identity, "input_version": version},
+                    )
+                    save(fresh)
+            with Session(request.app.state.engine) as fresh:
                 checked_speech(fresh, actor_id, id, identity, token, key_id, version, body, text)
-            audio = valid_mp3(request.app.state.voice_speaker_factory().synthesize(text))
+            audio = valid_mp3(request.app.state.voice_speaker_factory().synthesize(spoken))
             with Session(request.app.state.engine) as fresh:
                 saved = checked_speech(
                     fresh, actor_id, id, identity, token, key_id, version, body, text

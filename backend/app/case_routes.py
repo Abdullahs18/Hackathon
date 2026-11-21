@@ -77,6 +77,7 @@ def validate_recipient(session: Session, recipient: str, purpose: str) -> None:
         "service:mock-data": "mock_requirements_lookup",
         "service:gemini-voice": "voice_processing",
         "service:gtts": "speech_synthesis",
+        "service:gemini-speech": "speech_translation",
     }
     if recipient in services and services[recipient] == purpose:
         return

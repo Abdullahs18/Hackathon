@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
@@ -63,6 +64,23 @@ class VoiceProvider:
         self.extract_error = None
         self.transcribe_error = None
         self.closed = 0
+        self.translations = []
+        self.translate_callback = None
+        self.translate_error = None
+
+    def translate_urdu(self, text):
+        self.translations.append(text)
+        if self.translate_callback:
+            self.translate_callback()
+        if self.translate_error:
+            raise self.translate_error
+        return re.sub(
+            r"(__K[a-f0-9]{8}_[0-9]+__)|([^_]+|_)",
+            lambda m: (
+                m[1] if m[1] else (" شہری نے اطلاع دی " if re.search(r"[A-Za-z]", m[0]) else m[0])
+            ),
+            text,
+        )
 
     def transcribe(self, audio):
         self.transcriptions.append(audio)
@@ -111,6 +129,7 @@ def voice(app):
 def speaker(app):
     fake = Speaker()
     app.state.voice_speaker_factory = lambda: fake
+    app.state.speech_translation_provider_factory = VoiceProvider
     return fake
 
 
@@ -120,6 +139,14 @@ def case(case_factory):
 
 
 def permissions(client, owner, case):
+    give_consent(
+        client,
+        owner,
+        case["complaint_id"],
+        ["spoken_text"],
+        "service:gemini-speech",
+        "speech_translation",
+    )
     return (
         give_consent(
             client,

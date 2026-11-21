@@ -39,6 +39,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { CaseVoicePanel } from '@/components/citizen/CaseVoicePanel';
 import { ConsentManager } from '@/components/citizen/ConsentManager';
+import { missingSharing, requiredSharing } from '@/lib/consentRequirements';
 import { EvidenceUploader } from '@/components/citizen/EvidenceUploader';
 import { UrduAudioPlayer } from '@/components/citizen/UrduAudioPlayer';
 import {
@@ -584,13 +585,8 @@ export function CitizenWizard() {
     }
   };
 
-  const activeWorkspaceConsent = useMemo(() => {
-    if (!complaint?.destination_workspace_id) return false;
-    return consents.some(
-      (c) =>
-        c.recipient === `workspace:${complaint.destination_workspace_id}` && c.purpose === 'complaint_submission' &&
-        c.status === 'granted',
-    );
+  const requiredSharingReady = useMemo(() => {
+    return requiredSharing(complaint).length > 0 && missingSharing(complaint, consents).length === 0;
   }, [complaint, consents]);
 
   const handleAuthorizeAndSubmit = async (checkExistingFirst = false) => {
@@ -1480,6 +1476,7 @@ export function CitizenWizard() {
             </CardHeader>
             <CardContent>
               <ConsentManager
+                complaint={complaint}
                 complaintId={complaint.complaint_id}
                 recommendedRecipient={complaint.destination_workspace_id}
                 onConsentsChange={setConsents}
@@ -1500,13 +1497,13 @@ export function CitizenWizard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!activeWorkspaceConsent && (
+              {!requiredSharingReady && (
                 <Alert className="border-amber-400 bg-amber-50 text-amber-950">
                   <AlertTriangle className="h-4 w-4" aria-hidden />
                   <AlertDescription className="text-xs font-medium">
-                    Grant active consent above for{' '}
+                    Allow the missing required sharing permissions above:{' '}
                     <strong>
-                      {getWorkspaceName(complaint.destination_workspace_id)}
+                      {missingSharing(complaint, consents).map(need => need.label).join(', ')}
                     </strong>{' '}
                     before authorizing submission.
                   </AlertDescription>
@@ -1582,7 +1579,7 @@ export function CitizenWizard() {
                   disabled={
                     submitting ||
                     reviewDirty ||
-                    !activeWorkspaceConsent ||
+                    !requiredSharingReady ||
                     !citizenAuthorizedChecked
                   }
                   onClick={() => void handleAuthorizeAndSubmit(false)}

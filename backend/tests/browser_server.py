@@ -78,6 +78,7 @@ def main():
         app.state.analysis_provider_factory = assessment_provider
         app.state.voice_provider_factory = voice_provider
         app.state.voice_speaker_factory = lambda: speaker
+        app.state.speech_translation_provider_factory = VoiceProvider
         uvicorn.run(app, host="127.0.0.1", port=8011, access_log=False, proxy_headers=False)
 
 
