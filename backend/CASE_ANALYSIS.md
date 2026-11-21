@@ -119,6 +119,7 @@ demo has subsequently passed according to the user's live check.
 
 Explicit final authorization and the durable LangGraph/mock submission flow are now implemented;
 see SUBMISSION.md. Officer decisions and notifications are implemented; see OFFICER_REVIEW.md.
-Still pending: integrated voice/audio endpoints and playback, API keys, complete audit browsing, frontend
+Scoped keys and safe Admin trace browsing are implemented; see API_KEYS_AND_AUDIT.md.
+Still pending: integrated voice/audio endpoints and playback, frontend
 integration checkpoints and pinned mock-server validation. RAG remains a bounded extension after
 the core reporting flow works; the full dataset/knowledge collection will use a separate branch.

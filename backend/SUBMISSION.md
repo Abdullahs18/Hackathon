@@ -160,6 +160,6 @@ replay returns 200, and its draft must exactly equal the citizen-approved draft.
 
 New public contract fields/endpoints ship with schema tests. Frontend/test-owner review and the
 mock-server/integration checkpoints remain required. Officer actions and notifications are now
-implemented; see OFFICER_REVIEW.md. Full case-integrated voice, API keys and complete Admin
-audit/agent inspection remain later increments.
+implemented; see OFFICER_REVIEW.md. Scoped keys and safe Admin trace inspection are implemented;
+see API_KEYS_AND_AUDIT.md. Full case-integrated voice remains a later increment.
 Source-backed RAG/full dataset collection remain the approved follow-on after the core workflow.

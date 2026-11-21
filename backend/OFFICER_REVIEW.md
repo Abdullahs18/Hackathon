@@ -116,5 +116,6 @@ Historical notifications are not synthesized during migration; future events gen
 Automated tests cover the API workflow, permissions, history immutability, receipt preservation,
 notification ownership and revocation, legal transitions, safe retry, lost responses, migration
 and PostgreSQL competing commands. Frontend integration and live Gemini/audio behavior remain
-separate checks. API keys, complete Admin audit/agent inspection and integrated voice remain
-pending. Full data/RAG preparation stays on its later separate branch.
+separate checks. API keys and safe Admin trace inspection are now implemented; see
+API_KEYS_AND_AUDIT.md. Integrated voice remains pending. Full data/RAG preparation stays on its
+later separate branch.

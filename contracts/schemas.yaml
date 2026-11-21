@@ -963,7 +963,9 @@ components:
           $ref: '#/components/schemas/ComplaintDraft'
     audit_logs:
       type: object
-      description: Append-only summary. Access to trace details follows the underlying data permissions.
+      description: Admin-safe metadata projection, never the raw stored audit input/result. Input contains
+        validated metadata only; result is a fixed explanation. Unknown actions and private fields are
+        redacted.
       additionalProperties: false
       required:
       - audit_log_id
@@ -1006,6 +1008,10 @@ components:
         timestamp:
           type: string
           format: date-time
+        redacted:
+          type: boolean
+          enum:
+          - true
     notifications:
       type: object
       additionalProperties: false
@@ -1072,6 +1078,13 @@ components:
           format: date-time
         revoked:
           type: boolean
+        created_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
     api_keys:
       type: object
       description: Persistence only. List and revoke operations return metadata.
@@ -1115,6 +1128,10 @@ components:
         expires_at:
           type: string
           format: date-time
+      description: JWT-authenticated self-issuance only. Keys bind to the issuing account; there is no
+        target-principal selector. Requested scopes must fit its role. Timezone-aware expiry must be in
+        the future and at most 90 days away. A command key prevents duplicate issuance; the secret is
+        returned only once.
     ApiKeyIssued:
       type: object
       additionalProperties: false
@@ -1141,6 +1158,13 @@ components:
           type: boolean
         api_key:
           type: string
+        created_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
     mock_identity_records:
       type: object
       additionalProperties: false
@@ -1639,3 +1663,132 @@ components:
         timestamp:
           type: string
           format: date-time
+    AgentToolSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - call_id
+      - tool
+      - result_status
+      - timestamp
+      properties:
+        call_id:
+          type: string
+        tool:
+          type: string
+          enum:
+          - identity
+          - payment
+          - requirements
+          - submit
+          - verify
+          - unknown
+        result_status:
+          type: string
+          enum: &id002
+          - DRAFT
+          - COLLECT_INFORMATION
+          - VOICE_TRANSCRIPTION
+          - STRUCTURED_EXTRACTION
+          - CLASSIFICATION
+          - VALIDATION
+          - NEEDS_INFORMATION
+          - HUMAN_REVIEW
+          - ROUTING_RULE_EVALUATION
+          - COMPLAINT_GENERATION
+          - CITIZEN_REVIEW
+          - CONSENT_AND_AUTHORIZATION
+          - AGENT_EXECUTION
+          - MOCK_SERVICE_CALLS
+          - SUBMISSION_VERIFICATION
+          - SUBMITTED
+          - OFFICER_REVIEW
+          - RESOLVED
+          - UNKNOWN
+        timestamp:
+          type: string
+          format: date-time
+    AgentRunSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - agent_run_id
+      - complaint_id
+      - rule_version_id
+      - destination_workspace_id
+      - current_status
+      - next_step
+      - submitted
+      - tools
+      - created_at
+      - updated_at
+      - redacted
+      - outcomes
+      properties:
+        agent_run_id:
+          type: string
+        complaint_id:
+          type: string
+        rule_version_id:
+          type: string
+          nullable: true
+        destination_workspace_id:
+          type: string
+          nullable: true
+        current_status:
+          type: string
+          enum: *id002
+        next_step:
+          type: string
+          enum:
+          - identity
+          - payment
+          - requirements
+          - submit
+          - verify
+          - done
+          - blocked
+          - unknown
+        submitted:
+          type: boolean
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentToolSummary'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        redacted:
+          type: boolean
+          enum:
+          - true
+        outcomes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentOutcomeSummary'
+          description: Allowlisted server outcome codes with fixed explanations. Unrecognized private
+            errors/warnings are represented only as unknown_failure or unknown_warning.
+    AgentOutcomeSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - explanation
+      properties:
+        code:
+          type: string
+          enum:
+          - identity_fixture_not_found
+          - payment_fixture_scope_conflict
+          - payment_details_conflict
+          - requirements_unavailable
+          - reporting_information_missing
+          - possible_duplicate
+          - payment_not_found
+          - unknown_failure
+          - unknown_warning
+        explanation:
+          type: string

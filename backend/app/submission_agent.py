@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app import mock_services
 from app.audit import record_event
 from app.case_policy import locked_case, own_case, timestamp
+from app.key_policy import recheck_key
 from app.models import (
     AgentRun,
     AgentToolCall,
@@ -102,14 +103,25 @@ def blocked(case, approval, run, state, code, status="HUMAN_REVIEW"):
     checkpoint(case, approval, run, state, "blocked", status)
 
 
-def perform_step(engine, store, run_id, actor_id, token, step):
+def perform_step(
+    engine,
+    store,
+    run_id,
+    actor_id,
+    token,
+    step,
+    credential_key_id=None,
+    credential_operation="executeSubmission",
+):
     if step not in STEPS:
         raise HTTPException(409, "Agent step is not allowlisted.")
     with Session(engine) as session:
         existing = session.get(AgentRun, run_id)
         if existing is None:
             raise HTTPException(404, "Agent run does not exist.")
-        case = own_case(session, citizen(session, actor_id), existing.complaint_id)
+        user = citizen(session, actor_id)
+        recheck_key(session, credential_key_id, user, credential_operation)
+        case = own_case(session, user, existing.complaint_id)
         run = locked_run(session, case, run_id)
         if run.lease_token != token:
             raise HTTPException(409, "This agent execution lease is no longer current.")
@@ -288,14 +300,33 @@ class GraphState(TypedDict):
     filed_now: bool
 
 
-def invoke_graph(engine, store, run_id, actor_id, token, next_step, before_step=None):
+def invoke_graph(
+    engine,
+    store,
+    run_id,
+    actor_id,
+    token,
+    next_step,
+    before_step=None,
+    credential_key_id=None,
+    credential_operation="executeSubmission",
+):
     graph = StateGraph(GraphState)
 
     def node(step):
         def invoke(state):
             if before_step is not None:
                 before_step(step)
-            next_step, created = perform_step(engine, store, state["run_id"], actor_id, token, step)
+            next_step, created = perform_step(
+                engine,
+                store,
+                state["run_id"],
+                actor_id,
+                token,
+                step,
+                credential_key_id,
+                credential_operation,
+            )
             return {"next_step": next_step, "filed_now": state["filed_now"] or created}
 
         return invoke
@@ -321,11 +352,22 @@ def invoke_graph(engine, store, run_id, actor_id, token, next_step, before_step=
 
 
 def start_execution(
-    engine, store, actor_id, case_id, authorization_id, key, request_payload=None, before_step=None
+    engine,
+    store,
+    actor_id,
+    case_id,
+    authorization_id,
+    key,
+    request_payload=None,
+    before_step=None,
+    credential_key_id=None,
+    credential_operation="executeSubmission",
 ):
     token = str(uuid4())
     with Session(engine) as session:
-        case = own_case(session, citizen(session, actor_id), case_id)
+        user = citizen(session, actor_id)
+        recheck_key(session, credential_key_id, user, credential_operation)
+        case = own_case(session, user, case_id)
         run = session.scalar(
             select(AgentRun).where(AgentRun.citizen_id == actor_id, AgentRun.idempotency_key == key)
         )
@@ -438,7 +480,17 @@ def start_execution(
                 503, "Submission start is uncertain. Read saved runs before retrying the same key."
             ) from None
     try:
-        graph_result = invoke_graph(engine, store, run_id, actor_id, token, step, before_step)
+        graph_result = invoke_graph(
+            engine,
+            store,
+            run_id,
+            actor_id,
+            token,
+            step,
+            before_step,
+            credential_key_id,
+            credential_operation,
+        )
         with Session(engine) as session:
             case = own_case(session, citizen(session, actor_id), case_id)
             return execution_view(locked_run(session, case, run_id)), graph_result["filed_now"]

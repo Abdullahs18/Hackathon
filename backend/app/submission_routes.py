@@ -117,6 +117,8 @@ def execute(request, session, user, case_id, authorization_id, key, payload=None
         key,
         request_payload=payload,
         before_step=getattr(request.app.state, "agent_before_step", None),
+        credential_key_id=getattr(request.state, "api_key_id", None),
+        credential_operation=request.scope["route"].operation_id,
     )
 
 

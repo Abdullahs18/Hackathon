@@ -16,6 +16,7 @@ from app.analysis_policy import evaluate, validate_assessment
 from app.audit import record_event
 from app.case_policy import EDITABLE, own_case, require_version, timestamp
 from app.case_routes import IfMatch
+from app.key_policy import recheck_key
 from app.models import CaseAnalysis, Complaint, User
 from app.routing import POLICY_VERSION, catalog, decision, pinned_snapshot, resolve
 from app.security import CurrentUser, SessionDep
@@ -193,6 +194,23 @@ def analyze(
                     provider.close()
             except Exception as exc:
                 fail_assessment(session, actor_id, id, input_version, exc)
+        current = session.get(User, actor_id, populate_existing=True)
+        if current is not None:
+            try:
+                recheck_key(
+                    session, getattr(request.state, "api_key_id", None), current, "analyzeComplaint"
+                )
+            except HTTPException:
+                record_event(
+                    session,
+                    "analysis.discarded",
+                    actor_id,
+                    "Credential access changed before save",
+                    complaint_id=id,
+                    details={"input_version": input_version},
+                )
+                session.commit()
+                raise
         return save_assessment(
             session, actor_id, id, input_version, incident, assessment, model, response
         )

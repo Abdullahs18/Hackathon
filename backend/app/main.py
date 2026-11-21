@@ -6,8 +6,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.admin_trace_routes import router as admin_trace_router
 from app.analysis_routes import AnalysisGuard, provider_factory
 from app.analysis_routes import router as analysis_router
+from app.api_key_routes import router as api_key_router
 from app.case_routes import router as case_router
 from app.config import Settings
 from app.contracts import implemented_openapi
@@ -62,6 +64,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "X-Complaint-Version",
             "X-Evidence-SHA256",
             "X-Evidence-Verification",
+            "X-Next-Cursor",
         ],
     )
     install_error_handlers(app)
@@ -94,6 +97,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(submission_router)
     app.include_router(review_router)
     app.include_router(notification_router)
+    app.include_router(api_key_router)
+    app.include_router(admin_trace_router)
 
     def openapi():
         if app.openapi_schema is None:
@@ -107,6 +112,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     *submission_router.routes,
                     *review_router.routes,
                     *notification_router.routes,
+                    *api_key_router.routes,
+                    *admin_trace_router.routes,
                 ]
             )
         return app.openapi_schema

@@ -5,12 +5,14 @@ info:
   description: Synthetic demo data and simulated services only. Each protected operation accepts a frontend
     JWT or a scoped external API key bound to an authorized principal. Keys must be unexpired and unrevoked.
     API key scopes are grouped by resource area. Every request enforces role, resource, workspace and
-    current consent checks as applicable.
+    current consent checks as applicable. Protected operations accept exactly one Bearer JWT or X-API-Key.
+    Keys require their mapped resource scope as well as current account role, ownership, assignment and
+    consent. Issuing keys requires the account's own JWT; Admin cannot mint another account's credentials.
 tags:
 - name: Health
   description: Check process liveness and database readiness. No user or case data is returned.
 - name: Authentication
-  description: Sign in and view the current account.
+  description: Sign in, view the current account and manage self-issued application keys through JWT authentication.
 - name: Citizen complaints
   description: Create, update and track complaints, attach evidence and authorize submission.
 - name: Consent
@@ -1189,7 +1191,9 @@ paths:
       - Admin
       operationId: listAudit
       summary: Inspect audit history
-      description: Admin. Read-only trace access. Return authorized summaries and protect private evidence.
+      description: Admin with admin:audit scope when using a key. Read-only safe trace summaries, filtered
+        by optional complaint_id and paginated. Never returns stored private prose, evidence metadata,
+        credentials or raw tool payloads. No case-consent bypass.
       responses:
         '200':
           description: Success.
@@ -1199,18 +1203,49 @@ paths:
                 type: array
                 items:
                   $ref: ./schemas.yaml#/components/schemas/audit_logs
+          headers:
+            X-Next-Cursor:
+              description: Use this opaque ID as before for the next page; absent on the final page.
+              schema:
+                type: string
         '401':
           $ref: '#/components/responses/Error'
         '403':
           $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: before
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+        description: Opaque record ID from X-Next-Cursor. Newest records first; tied timestamps use record
+          IDs for stable ordering.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      - name: complaint_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
   /api/v1/admin/agent-runs:
     get:
       tags:
       - Admin
       operationId: listAgentRuns
       summary: Inspect agent runs
-      description: Admin. Read-only inspection. Return only runs whose data the administrator is authorized
-        to inspect.
+      description: Admin with admin:audit scope when using a key. Read-only safe run/route/status/tool
+        summaries. Does not return transcripts, incident data, classification prose, payment references,
+        receipt numbers, idempotency keys or raw tool inputs/outputs. No case-consent bypass.
       responses:
         '200':
           description: Success.
@@ -1219,18 +1254,50 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: ./schemas.yaml#/components/schemas/agent_runs
+                  $ref: ./schemas.yaml#/components/schemas/AgentRunSummary
+          headers:
+            X-Next-Cursor:
+              description: Use this opaque ID as before for the next page; absent on the final page.
+              schema:
+                type: string
         '401':
           $ref: '#/components/responses/Error'
         '403':
           $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: before
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+        description: Opaque record ID from X-Next-Cursor. Newest records first; tied timestamps use record
+          IDs for stable ordering.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      - name: complaint_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
   /api/v1/admin/api-keys:
     get:
       tags:
       - Admin
       operationId: listApiKeys
       summary: List API key metadata
-      description: Admin. Lists scopes, expiration and revocation.
+      description: Admin with admin:api_keys scope when using a key. Metadata only; no hashes, secrets,
+        creation command keys or principal bindings. Optional before cursor and limit; X-Next-Cursor identifies
+        the next page.
       responses:
         '200':
           description: Success.
@@ -1240,17 +1307,44 @@ paths:
                 type: array
                 items:
                   $ref: ./schemas.yaml#/components/schemas/ApiKeyMetadata
+          headers:
+            X-Next-Cursor:
+              description: Use this opaque ID as before for the next page; absent on the final page.
+              schema:
+                type: string
         '401':
           $ref: '#/components/responses/Error'
         '403':
           $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: before
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+        description: Opaque record ID from X-Next-Cursor. Newest records first; tied timestamps use record
+          IDs for stable ordering.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
     post:
       tags:
       - Admin
       operationId: createApiKey
       summary: Issue a scoped API key
-      description: Admin. Bind the key to the issuing principal and approved scopes. Return the secret
-        at issuance and store only its hash.
+      description: JWT-authenticated self-issuance only. Keys bind to the issuing account; there is no
+        target-principal selector. Requested scopes must fit its role. Timezone-aware expiry must be in
+        the future and at most 90 days away. A command key prevents duplicate issuance; the secret is
+        returned only once. This Admin route issues only for the current Admin; it cannot impersonate
+        another account.
       requestBody:
         required: true
         content:
@@ -1270,6 +1364,22 @@ paths:
           $ref: '#/components/responses/Error'
         '403':
           $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description: 'Issuer-bound creation command. A replay is 409: raw secrets are never replayed.
+          Recover metadata and revoke the key if its issuance response was lost.'
   /api/v1/admin/api-keys/{id}/revoke:
     parameters:
     - $ref: '#/components/parameters/api_key_idPath'
@@ -1293,6 +1403,8 @@ paths:
         '403':
           $ref: '#/components/responses/Error'
         '404':
+          $ref: '#/components/responses/Error'
+        '503':
           $ref: '#/components/responses/Error'
   /api/v1/mock/identity/{reference}:
     parameters:
@@ -1912,6 +2024,126 @@ paths:
           $ref: '#/components/responses/Error'
         '503':
           $ref: '#/components/responses/Error'
+  /api/v1/api-keys:
+    get:
+      tags:
+      - Authentication
+      operationId: listOwnApiKeys
+      summary: List my API-key metadata
+      description: JWT only. List only the current account's key metadata. Cursor scope is restricted
+        to that account.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ./schemas.yaml#/components/schemas/ApiKeyMetadata
+          headers:
+            X-Next-Cursor:
+              description: Use this opaque ID as before for the next page; absent on the final page.
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: before
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+        description: Opaque record ID from X-Next-Cursor. Newest records first; tied timestamps use record
+          IDs for stable ordering.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      security:
+      - BearerAuth: []
+    post:
+      tags:
+      - Authentication
+      operationId: createOwnApiKey
+      summary: Issue my scoped API key
+      description: JWT only. JWT-authenticated self-issuance only. Keys bind to the issuing account; there
+        is no target-principal selector. Requested scopes must fit its role. Timezone-aware expiry must
+        be in the future and at most 90 days away. A command key prevents duplicate issuance; the secret
+        is returned only once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/components/schemas/ApiKeyCreate
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/ApiKeyIssued
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description: 'Issuer-bound creation command. A replay is 409: raw secrets are never replayed.
+          Recover metadata and revoke the key if its issuance response was lost.'
+  /api/v1/api-keys/{id}/revoke:
+    parameters:
+    - $ref: '#/components/parameters/api_key_idPath'
+    post:
+      tags:
+      - Authentication
+      operationId: revokeOwnApiKey
+      summary: Revoke an API key
+      description: JWT only. Revoke only a key belonging to the current account. Other accounts' keys
+        are 404. Safe to repeat.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/ApiKeyMetadata
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      security:
+      - BearerAuth: []
 components:
   securitySchemes:
     BearerAuth:

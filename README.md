@@ -32,7 +32,7 @@ retry/version semantics and local checks. [The iteration review](backend/ITERATI
 records plan alignment, the confirmed live voice proof, fixes and remaining gaps.
 
 The canonical contract includes future endpoints. They are not implemented stubs and return 404
-until built. API keys are not implemented yet; presenting only `X-API-Key` fails authentication.
+until built. Scoped application keys are now implemented; use `X-API-Key` or a JWT, one at a time.
 Swagger currently lists the implemented subset at `/docs`; it is not a completion claim for the
 entire contract. Private evidence upload/list/metadata/download are implemented; see
 [backend/EVIDENCE.md](backend/EVIDENCE.md) for migration 0003, persistent storage and local checks.
@@ -51,8 +51,11 @@ submission, retries and withdrawal checks. [The submission review](backend/ITERA
 records the persistence and verification boundaries. Officer decisions, legal review outcomes,
 citizen clarification replies and persisted in-app notifications are implemented in migration 0007.
 Follow [backend/OFFICER_REVIEW.md](backend/OFFICER_REVIEW.md) for assignment, decision/reply headers,
-the transition table and withdrawal checks. The full integrated voice flow, API keys and complete
-Admin audit browsing remain to be implemented.
+the transition table and withdrawal checks. Scoped, hashed, expiring/revocable API keys and safe
+Admin audit/agent inspection are implemented in migration 0008. Follow
+[backend/API_KEYS_AND_AUDIT.md](backend/API_KEYS_AND_AUDIT.md) for JWT-only self-issuance, scope
+boundaries, revocation and safe trace pagination. All current contract operations are implemented;
+the full integrated voice flow and frontend/mock-server stabilization checks remain pending.
 See [backend/ROADMAP.md](backend/ROADMAP.md).
 
 The latest foundation review, plan gaps, confirmed provider choices and Windows/Docker manual

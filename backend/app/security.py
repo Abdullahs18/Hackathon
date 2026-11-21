@@ -1,5 +1,9 @@
+import hashlib
+import re
+import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
+from uuid import UUID
 
 import jwt
 from fastapi import Depends, HTTPException, Request
@@ -9,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.db import get_session
+from app.key_policy import active_key, require_key_scope
 from app.models import User
 
 password_hasher = PasswordHash.recommended()
@@ -41,6 +46,23 @@ def current_user(
     session: SessionDep,
     credential: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
 ) -> User:
+    api_key = request.headers.get("X-API-Key")
+    if api_key is not None:
+        if (
+            request.headers.get("Authorization") is not None
+            or re.fullmatch(r"dastak_[a-f0-9]{32}\.[A-Za-z0-9_-]{43}", api_key) is None
+        ):
+            raise unauthorized()
+        key_id = str(UUID(hex=api_key[7:39]))
+        row = active_key(session, key_id)
+        if not secrets.compare_digest(hashlib.sha256(api_key.encode()).hexdigest(), row.key_hash):
+            raise unauthorized()
+        user = session.get(User, row.principal_id, populate_existing=True)
+        if user is None or not user.active:
+            raise unauthorized()
+        require_key_scope(row, user, getattr(request.scope.get("route"), "operation_id", None))
+        request.state.api_key_id = row.api_key_id
+        return user
     if credential is None:
         raise unauthorized()
     settings = request.app.state.settings

@@ -40,12 +40,10 @@ def implemented_openapi(routes: list) -> dict:
                 path_item["parameters"] = deepcopy(spec["paths"][route.path]["parameters"])
             path_item[method.lower()] = operation
     spec["paths"] = paths
-    # API keys are a later increment; don't advertise them as usable in runtime Swagger yet.
-    spec["security"] = [{"BearerAuth": []}]
-    spec["components"]["securitySchemes"].pop("ApiKeyAuth", None)
     spec["info"]["description"] = (
-        "Synthetic demo only. This document includes implemented routes with JWT authentication. "
-        "The repository contracts also define planned routes and future API-key authentication."
+        "Synthetic demo only. Implemented routes accept exactly one JWT or scoped API key. "
+        "Key issuance requires the account's own JWT. Role, case and consent checks still apply. "
+        "Admin trace endpoints expose metadata projections, not raw case or tool payloads."
     )
     used_tags = {
         tag

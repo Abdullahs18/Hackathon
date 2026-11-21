@@ -40,7 +40,8 @@ Readiness now verifies that the database has reached the current Alembic migrati
 
 Together with the foundation, there are 22 implemented operations. The contract now has 41 planned
 operations, including those still unimplemented. Swagger only shows the implemented surface.
-API keys remain unsupported and fail closed; the future assignment scope is `admin:cases`.
+API keys are implemented; assignment requires `admin:cases` plus the existing Admin/route/consent
+checks. See API_KEYS_AND_AUDIT.md for self-issuance and role-specific resource scopes.
 
 ## Draft rules and connection recovery
 
@@ -151,5 +152,5 @@ Protected evidence uploads/retrieval were added in the next increment; see EVIDE
 Saved AI analysis/classification, immutable routing and citizen-authorized LangGraph/mock filing
 are implemented in later increments; see CASE_ANALYSIS.md, ROUTING.md and SUBMISSION.md.
 Officer decisions and notifications are now implemented; see OFFICER_REVIEW.md.
-Still pending: integrated audio/playback, API keys, complete
-audit inspection, pinned mock-server verification and the team frontend integration checkpoints.
+Scoped keys and safe Admin audit/agent inspection are implemented; see API_KEYS_AND_AUDIT.md.
+Still pending: integrated audio/playback, pinned mock-server verification and team frontend checkpoints.

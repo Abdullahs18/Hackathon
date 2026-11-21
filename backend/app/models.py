@@ -323,3 +323,22 @@ class Notification(Base):
     message: Mapped[str] = mapped_column(Text)
     read: Mapped[bool] = mapped_column(Boolean, default=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+    __table_args__ = (
+        CheckConstraint("principal_id = issued_by", name="ck_api_key_self_issued"),
+        UniqueConstraint("issued_by", "create_idempotency_key", name="uq_api_key_command"),
+    )
+    api_key_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    principal_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"), index=True)
+    issued_by: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    scopes: Mapped[list] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    create_idempotency_key: Mapped[str] = mapped_column(String(128))
+    create_fingerprint: Mapped[str] = mapped_column(String(64))
