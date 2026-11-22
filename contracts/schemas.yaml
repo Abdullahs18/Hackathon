@@ -2092,3 +2092,185 @@ components:
           type: boolean
           enum:
           - false
+
+    ReviewHelpCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - helper_id
+      - allow_sharing
+      properties:
+        helper_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        allow_sharing:
+          type: boolean
+          enum:
+          - true
+    ReviewHelpAction:
+      type: object
+      additionalProperties: false
+      required:
+      - request_id
+      properties:
+        request_id:
+          type: string
+          format: uuid
+    ReviewHelpReply:
+      type: object
+      additionalProperties: false
+      required:
+      - request_id
+      - note
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        note:
+          type: string
+          minLength: 1
+          maxLength: 4000
+    ReviewHelpRecord:
+      type: object
+      additionalProperties: false
+      required:
+      - request_id
+      - complaint_id
+      - helper_id
+      - requested_version
+      - status
+      - access_active
+      - requested_at
+      - acknowledged_at
+      - responded_at
+      - note
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        complaint_id:
+          type: string
+          format: uuid
+        helper_id:
+          type: string
+        requested_version:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum:
+          - requested
+          - acknowledged
+          - completed
+          - superseded
+        access_active:
+          type: boolean
+        requested_at:
+          type: string
+          format: date-time
+        acknowledged_at:
+          type: string
+          format: date-time
+          nullable: true
+        responded_at:
+          type: string
+          format: date-time
+          nullable: true
+        note:
+          type: string
+          nullable: true
+          maxLength: 4000
+    ReviewHelpInbox:
+      type: object
+      additionalProperties: false
+      required:
+      - requests
+      - helpers
+      - shared_fields
+      properties:
+        requests:
+          type: array
+          maxItems: 25
+          items:
+            $ref: '#/components/schemas/ReviewHelpRecord'
+        helpers:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - helper_id
+            properties:
+              helper_id:
+                type: string
+        shared_fields:
+          type: array
+          items:
+            type: string
+    CitizenAgentProgress:
+      type: object
+      additionalProperties: false
+      required:
+      - runs
+      properties:
+        runs:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - agent_run_id
+            - current_status
+            - next_step
+            - submission_reference
+            - started_at
+            - updated_at
+            - steps
+            properties:
+              agent_run_id:
+                type: string
+                format: uuid
+              current_status:
+                $ref: '#/components/schemas/WorkflowStatus'
+              next_step:
+                type: string
+              submission_reference:
+                type: string
+                nullable: true
+              started_at:
+                type: string
+                format: date-time
+              updated_at:
+                type: string
+                format: date-time
+              steps:
+                type: array
+                maxItems: 5
+                items:
+                  type: object
+                  additionalProperties: false
+                  required:
+                  - step
+                  - status
+                  - timestamp
+                  properties:
+                    step:
+                      type: string
+                      enum:
+                      - identity
+                      - payment
+                      - requirements
+                      - submit
+                      - verify
+                    status:
+                      type: string
+                      enum:
+                      - completed
+                      - skipped
+                      - blocked
+                    timestamp:
+                      type: string
+                      format: date-time

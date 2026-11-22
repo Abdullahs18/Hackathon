@@ -4,6 +4,99 @@ import {createHmac} from 'node:crypto';
 const API = 'http://127.0.0.1:8011';
 const password = 'synthetic-test-password';
 
+test('Urdu intake has translated primary actions and fits a narrow phone',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  await login(page);
+  await page.setViewportSize({width:390,height:844});
+  await page.locator('[role="radio"][lang="ur"]').filter({visible:true}).first().click();
+  await page.goto('/citizen/new');
+  await expect(page.locator('#incident-description')).toBeVisible();
+  await expect(page.getByRole('button',{name:'Save & Analyze with AI',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/محفوظ کریں اور معلومات جانچیں/})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('Admin user creation requires a valid password and saves a new synthetic user', async({page})=>{
+  await login(page,'demo-admin');
+  await page.getByRole('tab',{name:'Users & Roles'}).click();
+  await page.getByRole('button',{name:'Add Synthetic User'}).click();
+  const dialog=page.getByRole('dialog');
+  await expect(dialog.locator('#admin-user-pass')).toHaveValue('');
+  await dialog.locator('#admin-user-id').fill('browser-user-'+crypto.randomUUID());
+  await dialog.locator('#admin-user-pass').fill('short');
+  await expect(dialog.locator('button[type="submit"]')).toBeDisabled();
+  await dialog.locator('#admin-user-pass').fill('synthetic-safe-password');
+  const saved=page.waitForResponse(r=>r.url().endsWith('/users')&&r.request().method()==='POST');
+  await dialog.locator('button[type="submit"]').click();
+  expect((await saved).ok()).toBeTruthy();
+  await expect(dialog).not.toBeVisible();
+});
+
+test('Typed AI suggestions require confirmation and preserve existing citizen facts',async({page,request})=>{
+  const statement='Synthetic browser case: I sent 1500 PKR after a fake aid message. '+crypto.randomUUID();
+  await login(page);
+  await page.goto('/citizen/new');
+  await page.locator('#incident-description').fill(statement);
+  // The money question remains unknown; AI can propose facts without overwriting this form.
+  await page.getByText('I permit this saved complaint to be sent to Gemini for analysis. This does not authorize filing.').click();
+  await page.getByRole('button',{name:'Save & Analyze with AI'}).click();
+  const suggestions=page.getByRole('region',{name:'AI suggested complaint fields'});
+  await expect(suggestions).toBeVisible();
+  await expect(suggestions.getByRole('button',{name:'Apply selected suggestions'})).toBeDisabled();
+  await expect(suggestions.getByRole('checkbox',{name:/^Description/})).not.toBeChecked();
+  await suggestions.getByText('I checked the selected facts and want them saved in my form.').click();
+  await suggestions.getByRole('button',{name:'Apply selected suggestions'}).click();
+  await expect(page.locator('#incident-description')).toHaveValue(statement);
+  const headers={Authorization:'Bearer '+await token(request)};
+  const cases=await (await request.get(API+'/api/v1/complaints',{headers})).json();
+  const record=cases.find((item:{incident_data:{description:string}})=>item.incident_data.description===statement);
+  expect(record.incident_data.amount).toBe(1500);
+  expect(record.current_status).toBe('DRAFT');
+  expect(record.submission_reference ?? null).toBeNull();
+});
+
+test('Prepared form download and agent activity show the saved simulated receipt',async({page,request})=>{
+  const {id}=await ready(request,true);
+  await login(page);
+  await page.goto('/citizen/complaints/'+id);
+  const prepared=page.getByRole('region',{name:'Prepared complaint form'});
+  await expect(prepared).toContainText('1500');
+  const download=page.waitForEvent('download');
+  await prepared.getByRole('button',{name:'Download prepared copy'}).click();
+  expect((await download).suggestedFilename()).toBe('dastak-simulated-report-'+id+'.txt');
+  const activity=page.getByRole('region',{name:'Saved agent activity'});
+  await expect(activity.locator('[data-agent-step="verify"]')).toHaveAttribute('data-status','completed');
+  await expect(activity.locator('[data-agent-step="payment"]')).toHaveAttribute('data-status','skipped');
+  await expect(activity).toContainText('SIM-');
+});
+
+test('Human help is acknowledged and answered by the named Helper',async({page,request})=>{
+  const headers={Authorization:'Bearer '+await token(request)};
+  const created=await request.post(API+'/api/v1/complaints',{headers,data:{description:'Synthetic contradictory payment report '+crypto.randomUUID(),money_lost:false,amount:1500,currency:'PKR'}});
+  const id=(await created.json()).complaint_id;
+  const root=API+'/api/v1/complaints/'+id;
+  const analyzed=await request.post(root+'/analyze',{headers,data:{allow_external_processing:true}});
+  expect((await analyzed.json()).current_status).toBe('HUMAN_REVIEW');
+  await login(page);
+  await page.goto('/citizen/complaints/'+id);
+  const help=page.getByRole('region',{name:'Community human review'});
+  await help.getByRole('checkbox').check();
+  await help.getByRole('button',{name:'Request human help',exact:true}).click();
+  await expect(help).toContainText('Waiting for the named Helper');
+  await page.context().clearCookies();
+  await page.evaluate(()=>localStorage.clear());
+  await login(page,'demo-helper');
+  await page.goto('/helper/complaints/'+id);
+  await page.getByRole('button',{name:'Acknowledge review request'}).click();
+  await page.getByLabel('Helper review response').fill('Confirm whether money was lost before continuing.');
+  await page.getByRole('button',{name:'Send review response'}).click();
+  await expect(page.getByRole('region',{name:'Community human review'})).toContainText('The Helper sent a response.');
+  const result=await (await request.get(root+'/review-help',{headers})).json();
+  expect(result.requests[0].note).toBe('Confirm whether money was lost before continuing.');
+  expect((await (await request.get(root,{headers})).json()).current_status).toBe('HUMAN_REVIEW');
+});
+
 async function token(request:APIRequestContext, user='demo-citizen-1') {
   const response=await request.post(API+'/api/v1/auth/login',{data:{user_id:user,password}});
   expect(response.ok()).toBeTruthy();
@@ -77,7 +170,7 @@ test('real login and the complete saved voice complaint flow',async({page,reques
   const execution=await executionResponse;expect(execution.ok()).toBeTruthy();
   const receipt=await execution.json();expect(receipt.submitted).toBe(true);
   await expect(page.getByText('Simulated Complaint Submitted',{exact:true})).toBeVisible();
-  await expect(page.getByText(receipt.submission_reference,{exact:true})).toBeVisible();
+  await expect(page.getByText(receipt.submission_reference,{exact:true}).first()).toBeVisible();
   const record=await request.get(API+'/api/v1/complaints/'+turn.complaint_id,{headers});
   expect((await record.json()).submission_reference).toBe(receipt.submission_reference);
   await page.getByRole('link',{name:'Start a new report',exact:true}).click();

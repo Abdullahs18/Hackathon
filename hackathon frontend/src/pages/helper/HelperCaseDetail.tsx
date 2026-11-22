@@ -19,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ReviewHelpPanel } from '@/components/shared/ReviewHelpPanel';
 import { EvidenceUploader } from '@/components/citizen/EvidenceUploader';
 import { EvidenceGallery } from '@/components/shared/EvidenceGallery';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -161,6 +162,7 @@ export function HelperCaseDetail() {
       </div>
 
       <ErrorBanner error={error} onRetry={() => void loadCase()} />
+      {complaint && <ReviewHelpPanel complaint={complaint} helper onRefreshCase={() => void loadCase()}/>}
 
       {complaint && (
         <>

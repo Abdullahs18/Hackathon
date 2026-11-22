@@ -182,6 +182,21 @@ export interface AdminAssignmentQueue {
   next_cursor: string | null;
 }
 
+export interface ReviewHelpRecord {
+  request_id:string; complaint_id:string; helper_id:string; requested_version:number;
+  status:'requested'|'acknowledged'|'completed'|'superseded'; access_active:boolean;
+  requested_at:string; acknowledged_at:string|null; responded_at:string|null; note:string|null;
+}
+export interface ReviewHelpInbox {
+  requests:ReviewHelpRecord[]; helpers:Array<{helper_id:string}>; shared_fields:string[];
+}
+export interface CitizenAgentProgress {
+  runs:Array<{agent_run_id:string; current_status:WorkflowStatus; next_step:string;
+    submission_reference:string|null; started_at:string; updated_at:string;
+    steps:Array<{step:'identity'|'payment'|'requirements'|'submit'|'verify';status:'completed'|'skipped'|'blocked';timestamp:string}>;
+  }>;
+}
+
 export interface EvidenceRecord {
   evidence_id: string;
   complaint_id: string;

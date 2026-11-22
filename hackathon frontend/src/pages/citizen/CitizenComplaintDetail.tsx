@@ -1,3 +1,5 @@
+import { AgentProgress } from '@/components/citizen/AgentProgress';
+import { PreparedComplaint } from '@/components/citizen/PreparedComplaint';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import {
@@ -20,6 +22,7 @@ import {
 import { ConsentManager } from '@/components/citizen/ConsentManager';
 import { EvidenceUploader } from '@/components/citizen/EvidenceUploader';
 import { ReviewConversation } from '@/components/shared/ReviewConversation';
+import { ReviewHelpPanel } from '@/components/shared/ReviewHelpPanel';
 import { EvidenceGallery } from '@/components/shared/EvidenceGallery';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { WorkflowStatusBadge } from '@/components/shared/StatusBadge';
@@ -160,6 +163,9 @@ export function CitizenComplaintDetail() {
       </div>
 
       <ErrorBanner error={error} onRetry={() => void loadComplaint()} />
+      {complaint && <ReviewHelpPanel complaint={complaint}/>}
+      {complaint && <PreparedComplaint complaint={complaint}/>}
+      {complaint?.agent_run_id && <AgentProgress complaintId={complaint.complaint_id}/>}
 
       {complaint && (
         <>

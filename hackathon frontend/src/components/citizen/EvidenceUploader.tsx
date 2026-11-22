@@ -1,3 +1,4 @@
+import { useWorkflowCopy } from '@/i18n/workflowCopy';
 import { useRef, useState, type ChangeEvent } from 'react';
 import {
   AlertTriangle,
@@ -76,6 +77,7 @@ export function EvidenceUploader({
   onUploaded,
   disabled = false,
 }: EvidenceUploaderProps) {
+  const {copy} = useWorkflowCopy();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -127,11 +129,10 @@ export function EvidenceUploader({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-foreground">
-            Supporting Evidence (Images or PDFs - Max 10 MiB)
+            {copy("Supporting Evidence (Images or PDFs - Max 10 MiB)")}
           </h3>
           <p className="text-xs text-muted-foreground">
-            Attach transaction screenshots, receipts, or scam message captures.
-            File contents and SHA-256 hashes are checked; no OCR is run.
+            {copy("Attach transaction screenshots, receipts, or scam message captures. File contents and SHA-256 hashes are checked; no OCR is run.")}
           </p>
         </div>
 
@@ -159,7 +160,7 @@ export function EvidenceUploader({
           ) : (
             <>
               <UploadCloud className="h-4 w-4" aria-hidden />
-              <span>Attach Screenshot / PDF</span>
+              <span>{copy("Attach Screenshot / PDF")}</span>
             </>
           )}
         </Button>
@@ -174,7 +175,7 @@ export function EvidenceUploader({
 
       {evidenceIds.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border bg-muted/40 p-4 text-center text-xs text-muted-foreground">
-          No evidence files attached yet. Attachments are helpful but optional.
+          {copy("No evidence files attached yet. Attachments are helpful but optional.")}
         </div>
       ) : (
         <div className="space-y-2.5">

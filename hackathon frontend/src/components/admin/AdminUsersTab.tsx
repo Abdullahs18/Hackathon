@@ -47,7 +47,7 @@ export function AdminUsersTab() {
 
   const [open, setOpen] = useState(false);
   const [newUserId, setNewUserId] = useState('');
-  const [newPassword, setNewPassword] = useState('demo1234');
+  const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<Role>('Citizen');
   const [newWorkspaceId, setNewWorkspaceId] = useState(
     PRE_SEEDED_WORKSPACES[0].workspace_id,
@@ -73,7 +73,7 @@ export function AdminUsersTab() {
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
-    if (!newUserId.trim() || !newPassword) return;
+    if (!newUserId.trim() || newPassword.length < 12 || newPassword.length > 1024) return;
     setCreating(true);
     setError(null);
     try {
@@ -85,6 +85,7 @@ export function AdminUsersTab() {
       });
       setOpen(false);
       setNewUserId('');
+      setNewPassword('');
       await loadUsers();
     } catch (err) {
       setError(err);
@@ -95,7 +96,7 @@ export function AdminUsersTab() {
 
   return (
     <div className="space-y-4">
-      <ErrorBanner error={error} onRetry={() => void loadUsers()} />
+      {!open && <ErrorBanner error={error} onRetry={() => void loadUsers()} />}
 
       <Card className="border-border shadow-xs">
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
@@ -127,7 +128,7 @@ export function AdminUsersTab() {
               <span>Refresh</span>
             </Button>
 
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={next => {setOpen(next); setNewPassword(''); setError(null);}}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-1.5">
                   <Plus className="h-4 w-4" aria-hidden />
@@ -143,6 +144,7 @@ export function AdminUsersTab() {
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleCreate} className="space-y-4">
+                  <ErrorBanner error={error} />
                   <div className="space-y-1.5">
                     <Label htmlFor="admin-user-id">Synthetic User ID *</Label>
                     <Input
@@ -159,10 +161,15 @@ export function AdminUsersTab() {
                     <Input
                       id="admin-user-pass"
                       type="password"
+                      autoComplete="new-password"
+                      minLength={12}
+                      maxLength={1024}
+                      aria-describedby="admin-password-help"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
                     />
+                    <p id="admin-password-help" className="text-xs text-muted-foreground">Use a unique demo password with at least 12 characters.</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="admin-user-role">Role *</Label>
@@ -214,7 +221,7 @@ export function AdminUsersTab() {
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={creating}>
+                    <Button type="submit" disabled={creating || !newUserId.trim() || newPassword.length < 12 || newPassword.length > 1024}>
                       {creating ? 'Creating…' : 'Create User'}
                     </Button>
                   </DialogFooter>

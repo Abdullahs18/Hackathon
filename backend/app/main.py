@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.admin_assignment_routes import router as admin_assignment_router
 from app.admin_trace_routes import router as admin_trace_router
+from app.agent_progress_routes import router as agent_progress_router
 from app.analysis_routes import AnalysisGuard, provider_factory
 from app.analysis_routes import router as analysis_router
 from app.api_key_routes import router as api_key_router
@@ -22,6 +23,7 @@ from app.evidence_routes import router as evidence_router
 from app.evidence_storage import EvidenceStore
 from app.evidence_validation import EvidenceValidator
 from app.notification_routes import router as notification_router
+from app.review_help_routes import router as review_help_router
 from app.review_routes import router as review_router
 from app.routes import LoginLimiter, router
 from app.routing_routes import router as routing_router
@@ -106,6 +108,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(api_key_router)
     app.include_router(admin_trace_router)
     app.include_router(admin_assignment_router)
+    app.include_router(agent_progress_router)
+    app.include_router(review_help_router)
     app.include_router(case_voice_router)
 
     def openapi():
@@ -122,6 +126,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     *notification_router.routes,
                     *api_key_router.routes,
                     *admin_trace_router.routes,
+                    *admin_assignment_router.routes,
+                    *agent_progress_router.routes,
+                    *review_help_router.routes,
                     *case_voice_router.routes,
                 ]
             )

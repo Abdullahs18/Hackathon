@@ -9,6 +9,9 @@ import {
 import type {
   AgentRunRecord,
   AdminAssignmentQueue,
+  ReviewHelpInbox,
+  ReviewHelpRecord,
+  CitizenAgentProgress,
   AgentRunSummary,
   AnalysisResponse,
   ApiErrorBody,
@@ -861,6 +864,18 @@ export const dastakApi = {
   },
   async assignOfficer(id: string, officerId: string) {
     return fetchJson(`/api/v1/admin/complaints/${encodeURIComponent(id)}/assignment`, {method:'POST', body:{officer_id:officerId}});
+  },
+  async getReviewHelp(id:string):Promise<ReviewHelpInbox> {
+    return fetchJson(`/api/v1/complaints/${encodeURIComponent(id)}/review-help`);
+  },
+  async requestReviewHelp(id:string, helperId:string, version:number|undefined, key:string):Promise<ReviewHelpRecord> {
+    return fetchJson(`/api/v1/complaints/${encodeURIComponent(id)}/review-help`, {method:'POST',body:{helper_id:helperId,allow_sharing:true},ifMatch:savedVersion(version),idempotencyKey:key});
+  },
+  async actReviewHelp(id:string, requestId:string, version:number|undefined, note?:string):Promise<ReviewHelpRecord> {
+    return fetchJson(`/api/v1/complaints/${encodeURIComponent(id)}/review-help/${note === undefined ? 'acknowledge' : 'respond'}`, {method:'POST',body:note === undefined ? {request_id:requestId} : {request_id:requestId,note},ifMatch:savedVersion(version)});
+  },
+  async getAgentProgress(id:string):Promise<CitizenAgentProgress> {
+    return fetchJson(`/api/v1/complaints/${encodeURIComponent(id)}/agent-progress`);
   },
   async listAssignmentQueue(assignment: 'unassigned' | 'assigned' | 'all' = 'unassigned', before?: string): Promise<AdminAssignmentQueue> {
     const query = new URLSearchParams({assignment, limit:'25'});

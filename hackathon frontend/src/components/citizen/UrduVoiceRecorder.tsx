@@ -1,3 +1,4 @@
+import { useWorkflowCopy } from '@/i18n/workflowCopy';
 import { useEffect, useRef, useState } from 'react';
 import { Mic, Sparkles, Square, Trash2, Volume2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -98,6 +99,7 @@ export function UrduVoiceRecorder({
   onRecordingReady,
   disabled = false,
 }: UrduVoiceRecorderProps) {
+  const {copy} = useWorkflowCopy();
   const [recording, setRecording] = useState(false);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -295,7 +297,7 @@ export function UrduVoiceRecorder({
               onClick={recording ? stopRecording : () => void startRecording()}
               disabled={disabled}
               aria-label={
-                recording ? 'Stop Urdu voice recording' : 'Start Urdu voice recording'
+                copy(recording ? 'Stop Urdu voice recording' : 'Start Urdu voice recording')
               }
               aria-pressed={recording}
               className={`relative flex h-18 w-18 items-center justify-center rounded-full shadow-md transition-all active:scale-95 focus-visible:ring-4 focus-visible:ring-ring ${
@@ -316,7 +318,7 @@ export function UrduVoiceRecorder({
               {recording && <span aria-hidden className="rec-dot inline-block h-2.5 w-2.5 rounded-full bg-[#B91C1C]" />}
               {recording
                 ? `Recording… ${formatDuration(elapsedSec)}`
-                : 'Tap Mic to Explain Incident in Urdu'}
+                : copy('Tap Mic to Explain Incident in Urdu')}
             </p>
             <p
               dir="rtl"

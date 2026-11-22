@@ -15,6 +15,9 @@ from app.validation import schema_definitions
 
 router = APIRouter(prefix="/api/v1/admin", tags=["Admin"])
 ACTION_MESSAGES = {
+    "review_help.requested": "The citizen requested scoped community Helper assistance.",
+    "review_help.acknowledged": "The named Helper acknowledged the request.",
+    "review_help.responded": "The named Helper sent a response to the citizen.",
     "voice.processing_started": "Voice processing was explicitly permitted.",
     "voice.transcribed": "A private transcript checkpoint was saved.",
     "voice.extracted": "An unconfirmed voice proposal was saved.",

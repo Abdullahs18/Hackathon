@@ -36,16 +36,18 @@ for scope, operations in {
     "complaints:read": (
         "listComplaints getComplaint listEvidence getEvidence downloadEvidence "
         "getComplaintAnalysis getSubmissionAuthorization listCitizenAgentRuns "
-        "getCitizenAgentRun listCitizenReviewHistory listHelperGrants"
+        "getCitizenAgentRun listCitizenReviewHistory listHelperGrants getCitizenAgentProgress"
     ),
     "complaints:write": (
         "createComplaint updateComplaint uploadEvidence analyzeComplaint authorizeSubmission "
         "revokeSubmissionAuthorization executeSubmission replyToOfficer "
-        "grantHelperAccess revokeHelperAccess"
+        "grantHelperAccess revokeHelperAccess requestReviewHelp"
     ),
     "consents:read": "listConsents",
     "consents:write": "grantConsent changeConsent withdrawConsent",
-    "helper:access": "listHelperComplaints addHelperInformation",
+    "helper:access": (
+        "listHelperComplaints addHelperInformation acknowledgeReviewHelp respondReviewHelp"
+    ),
     "officer:access": (
         "listOfficerComplaints getOfficerComplaint takeOfficerAction listOfficerReviewHistory"
     ),
@@ -80,6 +82,7 @@ OPERATION_SCOPES.update(
 for operation in ["listEvidence", "getEvidence", "downloadEvidence"]:
     OPERATION_SCOPES[operation] = {"complaints:read", "helper:access", "officer:access"}
 OPERATION_SCOPES["uploadEvidence"] = {"complaints:write", "helper:access"}
+OPERATION_SCOPES["getReviewHelp"] = {"complaints:read", "helper:access"}
 
 
 def aware(value):

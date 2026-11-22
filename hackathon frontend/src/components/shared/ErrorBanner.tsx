@@ -2,6 +2,7 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { isDastakApiError } from '@/lib/apiClient';
+import { useI18n } from '@/i18n/I18nContext';
 
 interface ErrorBannerProps {
   error: unknown;
@@ -10,6 +11,7 @@ interface ErrorBannerProps {
 }
 
 export function ErrorBanner({ error, onRetry, titleOverride }: ErrorBannerProps) {
+  const {lang} = useI18n();
   if (!error) return null;
 
   let title = titleOverride || 'Request Failed';
@@ -52,9 +54,10 @@ export function ErrorBanner({ error, onRetry, titleOverride }: ErrorBannerProps)
       }
     >
       {icon}
-      <AlertTitle className="font-semibold">{title}</AlertTitle>
+      <AlertTitle className="font-semibold">{lang === 'ur' ? isNetwork ? 'انٹرنیٹ سے رابطہ منقطع ہے' : isAccessDenied ? 'اس کام کی اجازت موجود نہیں' : 'یہ کام مکمل نہیں ہو سکا' : title}</AlertTitle>
       <AlertDescription className="mt-1 space-y-2">
-        <p className="text-sm">{detail}</p>
+        <p className="text-sm">{lang === 'ur' ? isNetwork ? 'رابطہ بحال ہونے پر محفوظ معلومات دوبارہ دیکھیں اور پھر کوشش کریں۔' : isAccessDenied ? 'درست اکاؤنٹ اور متعلقہ شکایت کی موجودہ اجازت دیکھیں۔ پھر محفوظ شکایت دوبارہ کھولیں۔' : 'اپنی محفوظ شکایت اور درج کی گئی معلومات دیکھیں۔ مزید تفصیل نیچے موجود ہے۔' : detail}</p>
+        {lang === 'ur' && <details className="text-xs"><summary>مزید تکنیکی تفصیل</summary><p dir="auto" className="mt-2 break-words">{detail}</p></details>}
         {validationList && validationList.length > 0 && (
           <ul className="list-disc ps-5 text-xs">
             {validationList.map((item, idx) => (
@@ -71,7 +74,7 @@ export function ErrorBanner({ error, onRetry, titleOverride }: ErrorBannerProps)
             className="mt-2 h-8 gap-1.5 bg-white text-foreground"
           >
             <RefreshCw className="h-3.5 w-3.5" aria-hidden />
-            <span>Retry</span>
+            <span>{lang === 'ur' ? 'دوبارہ کوشش کریں' : 'Retry'}</span>
           </Button>
         )}
       </AlertDescription>

@@ -1,3 +1,6 @@
+import { AgentProgress } from '@/components/citizen/AgentProgress';
+import { PreparedComplaint } from '@/components/citizen/PreparedComplaint';
+import { useWorkflowCopy } from '@/i18n/workflowCopy';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { FadeSlide } from '@/components/motion/presets';
@@ -38,6 +41,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { CaseVoicePanel } from '@/components/citizen/CaseVoicePanel';
+import { AnalysisSuggestions } from '@/components/citizen/AnalysisSuggestions';
+import { ReviewHelpPanel } from '@/components/shared/ReviewHelpPanel';
 import { ConsentManager } from '@/components/citizen/ConsentManager';
 import { missingSharing, requiredSharing } from '@/lib/consentRequirements';
 import { EvidenceUploader } from '@/components/citizen/EvidenceUploader';
@@ -89,6 +94,7 @@ function emptyIncident(): IncidentInformation {
 }
 
 export function CitizenWizard() {
+  const {copy, lang} = useWorkflowCopy();
   const { id: routeComplaintId } = useParams();
   const [searchParams] = useSearchParams();
   const recoverFlag = searchParams.get('recover') === '1';
@@ -347,11 +353,9 @@ export function CitizenWizard() {
     key: K,
     value: IncidentInformation[K],
   ) => {
-    setIncident((prev) => {
-      const next = { ...prev, [key]: value };
-      persistChange(next);
-      return next;
-    });
+    const next = { ...incident, [key]: value };
+    setIncident(next);
+    persistChange(next);
   };
 
   const ensureComplaintDraftOnServer = useCallback(async (): Promise<
@@ -763,6 +767,7 @@ export function CitizenWizard() {
       )}
 
       <ErrorBanner error={error} />
+      {complaint && (submitting || complaint.agent_run_id || step===3) && <AgentProgress complaintId={complaint.complaint_id} active={submitting}/>}
 
       <FadeSlide key={step} className="space-y-6">
       {/* STEP 0 — EXPLAIN & EVIDENCE */}
@@ -786,11 +791,11 @@ export function CitizenWizard() {
 
             <label className="flex items-start gap-3 rounded-lg border p-3 text-sm">
               <input type="checkbox" checked={providerPermission} onChange={e => setProviderPermission(e.target.checked)} />
-              I permit this saved complaint to be sent to Gemini for analysis. This does not authorize filing.
+              {copy("I permit this saved complaint to be sent to Gemini for analysis. This does not authorize filing.")}
             </label>
             <div className="space-y-2">
               <Label htmlFor="incident-description">
-                Incident Description (Urdu RTL or English) *
+                {copy("Incident Description (Urdu RTL or English) *")}
               </Label>
               <Textarea
                 id="incident-description"
@@ -806,33 +811,33 @@ export function CitizenWizard() {
 
             <div className="space-y-2">
               <Label htmlFor="scam-message">
-                Scam SMS / WhatsApp Message Text (if available)
+                {copy("Scam SMS / WhatsApp Message Text (if available)")}
               </Label>
               <Textarea
                 id="scam-message"
                 rows={2}
                 value={incident.scam_message ?? ''}
                 onChange={(e) => updateField('scam_message', e.target.value)}
-                placeholder="Paste or type suspicious message text, fake relief claim, or link..."
+                placeholder={copy("Paste or type suspicious message text, fake relief claim, or link...")}
               />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="incident-date">
-                  Incident Date (exact or approx)
+                  {copy("Incident Date (exact or approx)")}
                 </Label>
                 <Input
                   id="incident-date"
                   value={incident.incident_date ?? ''}
                   onChange={(e) => updateField('incident_date', e.target.value)}
-                  placeholder="e.g., 2026-11-19 or Yesterday"
+                  placeholder={copy("e.g., 2026-11-19 or Yesterday")}
                   className="min-h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="incident-platform">Channel / Platform</Label>
+                <Label htmlFor="incident-platform">{copy("Channel / Platform")}</Label>
                 <Select
                   value={incident.platform || 'unknown'}
                   onValueChange={(val) => updateField('platform', val === 'unknown' ? null : val)}
@@ -841,20 +846,20 @@ export function CitizenWizard() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unknown">Unknown</SelectItem>
+                    <SelectItem value="unknown">{copy("Unknown")}</SelectItem>
                     <SelectItem value="SMS">SMS</SelectItem>
                     <SelectItem value="WhatsApp">WhatsApp</SelectItem>
-                    <SelectItem value="Phone Call">Phone Call</SelectItem>
+                    <SelectItem value="Phone Call">{copy("Phone Call")}</SelectItem>
                     <SelectItem value="SMS / Phone Call">
-                      SMS / Phone Call
+                      {copy("SMS / Phone Call")}
                     </SelectItem>
-                    <SelectItem value="Website / Link">Website / Link</SelectItem>
+                    <SelectItem value="Website / Link">{copy("Website / Link")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="money-lost">Was Money Lost?</Label>
+                <Label htmlFor="money-lost">{copy("Was Money Lost?")}</Label>
                 <Select
                   value={
                     incident.money_lost === true
@@ -878,7 +883,7 @@ export function CitizenWizard() {
                     <SelectItem value="no">
                       No — Attempt failed / no loss
                     </SelectItem>
-                    <SelectItem value="unknown">Not sure yet</SelectItem>
+                    <SelectItem value="unknown">{copy("Not sure yet")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -886,7 +891,7 @@ export function CitizenWizard() {
 
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="amount-pkr">Amount Lost</Label>
+                <Label htmlFor="amount-pkr">{copy("Amount Lost")}</Label>
                 <Input
                   id="amount-pkr"
                   type="number"
@@ -903,11 +908,11 @@ export function CitizenWizard() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="incident-currency">Currency</Label>
-                <Input id="incident-currency" value={incident.currency || ''} placeholder="e.g., PKR, or leave unknown" onChange={e => updateField('currency', e.target.value.toUpperCase())} />
+                <Label htmlFor="incident-currency">{copy("Currency")}</Label>
+                <Input id="incident-currency" value={incident.currency || ''} placeholder={copy("e.g., PKR, or leave unknown")} onChange={e => updateField('currency', e.target.value.toUpperCase())} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="payment-method">Payment Method</Label>
+                <Label htmlFor="payment-method">{copy("Payment Method")}</Label>
                 <Select
                   value={incident.payment_method || 'none'}
                   onValueChange={(val) =>
@@ -915,10 +920,10 @@ export function CitizenWizard() {
                   }
                 >
                   <SelectTrigger id="payment-method" className="min-h-11 w-full">
-                    <SelectValue placeholder="Select method" />
+                    <SelectValue placeholder={copy("Select method")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Unknown / Not applicable</SelectItem>
+                    <SelectItem value="none">{copy("Unknown / Not applicable")}</SelectItem>
                     <SelectItem value="Easypaisa">Easypaisa</SelectItem>
                     <SelectItem value="JazzCash">JazzCash</SelectItem>
                     <SelectItem value="Raast">Raast / Bank</SelectItem>
@@ -929,7 +934,7 @@ export function CitizenWizard() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <Label htmlFor="tx-ref">Transaction Reference</Label>
+                  <Label htmlFor="tx-ref">{copy("Transaction Reference")}</Label>
                   <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
                     <Checkbox
                       checked={txUnknown}
@@ -942,7 +947,7 @@ export function CitizenWizard() {
                         );
                       }}
                     />
-                    <span>Unknown / معلوم نہیں</span>
+                    <span>{copy("Unknown / معلوم نہیں")}</span>
                   </label>
                 </div>
                 <Input
@@ -958,8 +963,8 @@ export function CitizenWizard() {
                   }
                   placeholder={
                     txUnknown
-                      ? 'Recorded as unknown (null)'
-                      : 'Optional e.g., SYN-TXN-2026-0041'
+                      ? copy("Recorded as unknown (null)")
+                      : copy("Optional e.g., SYN-TXN-2026-0041")
                   }
                   className="min-h-11 font-mono"
                 />
@@ -968,8 +973,7 @@ export function CitizenWizard() {
 
             <div className="space-y-2">
               <Label htmlFor="suspect-details">
-                Suspect Phone Numbers, URLs, or Account Handles (comma or line
-                separated, synthetic only)
+                {copy("Suspect Phone Numbers, URLs, or Account Handles (comma or line separated, synthetic only)")}
               </Label>
               <Input
                 id="suspect-details"
@@ -1000,8 +1004,7 @@ export function CitizenWizard() {
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
               <p className="text-xs text-muted-foreground">
-                Next: AI classifies the incident, checks for contradictions, and
-                evaluates active demo routing rules.
+                {lang === 'ur' ? 'اگلا قدم: معاون واقعے کی قسم، متضاد معلومات اور دستیاب فرضی دفتر کے قواعد دیکھے گا۔' : 'Next: AI classifies the incident, checks for contradictions, and evaluates active demo routing rules.'}
               </p>
               <Button
                 type="button"
@@ -1017,7 +1020,7 @@ export function CitizenWizard() {
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4" aria-hidden />
-                    <span>Save & Analyze with AI</span>
+                    <span>{copy("Save & Analyze with AI")}</span>
                     <ArrowRight className="h-4 w-4" aria-hidden />
                   </>
                 )}
@@ -1028,18 +1031,17 @@ export function CitizenWizard() {
       )}
 
       {/* STEP 1 — AI CLASSIFICATION, READINESS & FOLLOW-UP / HUMAN REVIEW */}
-      {step === 1 && <Button type="button" variant="outline" onClick={() => setStep(0)}>Edit incident details</Button>}
+      {step === 1 && <Button type="button" variant="outline" onClick={() => setStep(0)}>{copy("Edit incident details")}</Button>}
       {step === 1 && (
         <div className="space-y-5">
+          {analysis && complaint && <AnalysisSuggestions key={complaint.version} analysis={analysis} complaint={complaint} onApplied={record => {syncFormFromComplaint(record); setAnalysis(null); setCitizenAuthorizedChecked(false); setStep(0);}} />}
           <Card className="border-border shadow-xs">
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <CardTitle>Step 2: AI Classification & Readiness</CardTitle>
+                  <CardTitle>{copy("Step 2: AI Classification & Readiness")}</CardTitle>
                   <CardDescription>
-                    Advisory classification and deterministic rule check. Low
-                    confidence or contradictions stop automatically for Human
-                    Review.
+                    {copy("Advisory classification and deterministic rule check. Low confidence or contradictions stop automatically for Human Review.")}
                   </CardDescription>
                 </div>
                 {complaint && (
@@ -1059,11 +1061,14 @@ export function CitizenWizard() {
                     disabled={analyzing}
                     onClick={() => void handleAnalyze()}
                   >
-                    {analyzing ? 'Analyzing…' : 'Run AI Analysis'}
+                    {analyzing ? 'Analyzing…' : copy("Run AI Analysis")}
                   </Button>
                 </div>
               ) : (
                 <>
+                  <p className="rounded-lg border border-primary/20 bg-card p-4 text-sm leading-relaxed" dir="auto">{analysis.extraction?.spoken_summary_ur || copy('Review your saved details before continuing.')}</p>
+                  <details className="space-y-4 rounded-lg border p-4">
+                  <summary className="cursor-pointer text-sm font-medium">{copy('More details')}</summary>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1150,6 +1155,7 @@ export function CitizenWizard() {
                       </div>
                     </div>
                   )}
+                  </details>
                 </>
               )}
 
@@ -1159,7 +1165,7 @@ export function CitizenWizard() {
                 <Alert className="border-[#EA580C] bg-[#FFEDD5] text-[#9A3412]">
                   <AlertTriangle className="h-5 w-5" aria-hidden />
                   <AlertTitle className="text-base font-bold">
-                    Stopped — Handed Over for Human Review (I Am Not Sure)
+                    {copy('Needs human review — not submitted')}
                   </AlertTitle>
                   <AlertDescription className="mt-2 space-y-3 text-sm">
                     <p>
@@ -1183,7 +1189,7 @@ export function CitizenWizard() {
                         onClick={() => setStep(0)}
                         className="min-h-10 bg-white text-foreground"
                       >
-                        Edit Incident Details
+                        {copy("Edit Incident Details")}
                       </Button>
                       <Button asChild variant="secondary" className="min-h-10">
                         <Link to="/citizen">
@@ -1194,6 +1200,8 @@ export function CitizenWizard() {
                   </AlertDescription>
                 </Alert>
               )}
+
+              {complaint && ['HUMAN_REVIEW','NEEDS_INFORMATION'].includes(complaint.current_status) && <ReviewHelpPanel complaint={complaint}/>}
 
               {/* NEEDS INFORMATION FOLLOW-UP QUESTIONS */}
               {(complaint?.current_status === 'NEEDS_INFORMATION' ||
@@ -1347,15 +1355,15 @@ export function CitizenWizard() {
         <div className="space-y-5">
           <Card className="border-border shadow-xs">
             <CardHeader>
-              <CardTitle>Step 3A: Review & Correct Complaint Summary</CardTitle>
+              <CardTitle>{copy("Step 3A: Review & Correct Complaint Summary")}</CardTitle>
               <CardDescription>
-                Listen to the Urdu summary below, correct any detail, and save
-                before granting data-sharing consent.
+                {copy("Listen to the Urdu summary below, correct any detail, and save before granting data-sharing consent.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <PreparedComplaint complaint={complaint} dirty={reviewDirty}/>
               <UrduAudioPlayer
-                title="Spoken Urdu Complaint Summary"
+                title={copy("Spoken Urdu Complaint Summary")}
                 urduText={urduSummaryScript}
                 complaint={reviewDirty ? null : complaint}
                 kind="review"
@@ -1363,7 +1371,7 @@ export function CitizenWizard() {
               />
 
               <div className="space-y-2">
-                <Label htmlFor="review-desc">Formal Complaint Summary</Label>
+                <Label htmlFor="review-desc">{copy("Formal Complaint Summary")}</Label>
                 <Textarea
                   id="review-desc"
                   dir="auto"
@@ -1375,7 +1383,7 @@ export function CitizenWizard() {
 
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="review-amount">Amount (PKR)</Label>
+                  <Label htmlFor="review-amount">{copy("Amount (PKR)")}</Label>
                   <Input
                     id="review-amount"
                     type="number"
@@ -1386,7 +1394,7 @@ export function CitizenWizard() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="review-method">Payment Method</Label>
+                  <Label htmlFor="review-method">{copy("Payment Method")}</Label>
                   <Input
                     id="review-method"
                     value={reviewPaymentMethod}
@@ -1396,13 +1404,13 @@ export function CitizenWizard() {
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
-                    <Label htmlFor="review-tx">Transaction Reference</Label>
+                    <Label htmlFor="review-tx">{copy("Transaction Reference")}</Label>
                     <label className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground">
                       <Checkbox
                         checked={reviewTxUnknown}
                         onCheckedChange={(c) => setReviewTxUnknown(Boolean(c))}
                       />
-                      <span>Unknown</span>
+                      <span>{copy("Unknown")}</span>
                     </label>
                   </div>
                   <Input
@@ -1416,7 +1424,7 @@ export function CitizenWizard() {
                 </div>
               </div>
 
-              <label className="flex gap-2 text-sm"><input type="checkbox" checked={providerPermission} onChange={e => setProviderPermission(e.target.checked)} />I permit Gemini to analyze my saved summary corrections.</label>
+              <label className="flex gap-2 text-sm"><input type="checkbox" checked={providerPermission} onChange={e => setProviderPermission(e.target.checked)} />{copy("I permit Gemini to analyze my saved summary corrections.")}</label>
               {reviewDirty && <p role="status" className="text-sm">Save and analyze your summary corrections before authorizing submission.</p>}
               <div className="flex justify-end">
                 <Button
@@ -1426,7 +1434,7 @@ export function CitizenWizard() {
                   onClick={() => void handleSaveReviewCorrections()}
                   className="min-h-10"
                 >
-                  {loading ? 'Saving Corrections…' : 'Save Summary Corrections'}
+                  {loading ? 'Saving Corrections…' : copy("Save Summary Corrections")}
                 </Button>
               </div>
             </CardContent>
@@ -1436,7 +1444,7 @@ export function CitizenWizard() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Building2 className="h-5 w-5 text-indigo-800" aria-hidden />
-                <span>Step 3B: Simulated Routing Destination</span>
+                <span>{copy("Step 3B: Simulated Routing Destination")}</span>
               </CardTitle>
               <CardDescription>
                 Selected dynamically by the backend versioned rule engine — not
@@ -1468,10 +1476,9 @@ export function CitizenWizard() {
 
           <Card className="border-border shadow-xs">
             <CardHeader>
-              <CardTitle>Step 3C: Granular Data-Sharing Consent</CardTitle>
+              <CardTitle>{copy("Step 3C: Granular Data-Sharing Consent")}</CardTitle>
               <CardDescription>
-                Choose exactly who receives your data, for what purpose, and
-                which scopes are shared. You can withdraw consent anytime.
+                {copy("Choose exactly who receives your data, for what purpose, and which scopes are shared. You can withdraw consent anytime.")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1489,7 +1496,7 @@ export function CitizenWizard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
                 <ShieldCheck className="h-5 w-5" aria-hidden />
-                <span>Step 3D: Explicit Authorization Gate</span>
+                <span>{copy("Step 3D: Explicit Authorization Gate")}</span>
               </CardTitle>
               <CardDescription>
                 Dastak never submits automatically. Only your explicit action
@@ -1520,26 +1527,25 @@ export function CitizenWizard() {
                 />
                 <span>
                   <span className="block font-semibold text-foreground">
-                    I reviewed this complaint summary and explicitly authorize
-                    Dastak to submit it to{' '}
-                    {getWorkspaceName(complaint.destination_workspace_id)}{' '}
-                    (Simulated Service).
+                    {lang === 'ur' ? 'میں نے شکایت کا یہ خلاصہ پڑھ لیا ہے اور دستک کو اسے اس فرضی دفتر میں جمع کرنے کی واضح اجازت دیتا/دیتی ہوں: ' : 'I reviewed this complaint summary and explicitly authorize Dastak to submit it to '}
+                    {copy(getWorkspaceName(complaint.destination_workspace_id))}{' '}
+                    {lang === 'ur' ? ' (فرضی خدمت)۔' : '(Simulated Service).'}
                   </span>
-                  <span
+                  {lang !== 'ur' && (<span
                     dir="rtl"
                     lang="ur"
                     className="font-urdu mt-1 block text-sm text-primary"
                   >
                     میں نے شکایت کا جائزہ لے لیا ہے اور فرضی سروس کو جمع کروانے
                     کی باقاعدہ اجازت دیتا/دیتی ہوں۔
-                  </span>
+                  </span>)}
                 </span>
               </label>
 
               {submissionTimedOut && (
                 <Alert className="border-[#EA580C] bg-[#FFEDD5] text-[#9A3412]">
                   <AlertTriangle className="h-4 w-4" aria-hidden />
-                  <AlertTitle>Connection Dropped During Submission</AlertTitle>
+                  <AlertTitle>{copy("Connection Dropped During Submission")}</AlertTitle>
                   <AlertDescription className="mt-1 space-y-2 text-xs">
                     <p>
                       Your Idempotency-Key (
@@ -1571,7 +1577,7 @@ export function CitizenWizard() {
                   onClick={() => setStep(1)}
                   className="min-h-11 bg-white"
                 >
-                  Back
+                  {copy("Back")}
                 </Button>
 
                 <Button
@@ -1593,7 +1599,7 @@ export function CitizenWizard() {
                   ) : (
                     <>
                       <ShieldCheck className="h-5 w-5" aria-hidden />
-                      <span>Authorize & Submit / تصدیق اور جمع کروائیں</span>
+                      <span>{copy("Authorize & Submit")}</span>
                     </>
                   )}
                 </Button>

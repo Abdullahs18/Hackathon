@@ -33,6 +33,239 @@ security:
 - BearerAuth: []
 - ApiKeyAuth: []
 paths:
+  /api/v1/complaints/{id}/review-help:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - Citizen complaints
+      operationId: getReviewHelp
+      summary: Owner or currently authorized target Helper only. Returns saved requests,
+        acknowledgments and responses. Only the owner receives active Helper choices.
+        No Admin, Officer, voice or evidence access.
+      description: Owner or currently authorized target Helper only. Returns saved requests,
+        acknowledgments and responses. Only the owner receives active Helper choices.
+        No Admin, Officer, voice or evidence access.
+      responses:
+        '200':
+          description: Current saved state.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/ReviewHelpInbox
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+    post:
+      tags:
+      - Citizen complaints
+      operationId: requestReviewHelp
+      summary: Owning Citizen explicitly requests help for a stopped or incomplete unfiled
+        case. Atomically grants the named active Helper the listed incident fields,
+        excluding evidence, private voice and correction history. Requires current version
+        and caller-bound replay key; never grants filing authority.
+      description: Owning Citizen explicitly requests help for a stopped or incomplete
+        unfiled case. Atomically grants the named active Helper the listed incident
+        fields, excluding evidence, private voice and correction history. Requires current
+        version and caller-bound replay key; never grants filing authority.
+      responses:
+        '200':
+          description: Current saved state.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/ReviewHelpRecord
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^"[1-9][0-9]*"$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/components/schemas/ReviewHelpCreate
+  /api/v1/complaints/{id}/review-help/acknowledge:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    post:
+      tags:
+      - Helper
+      operationId: acknowledgeReviewHelp
+      summary: Target active Helper acknowledges the latest request with current case
+        grant and every requested field scope. Repeated acknowledgment is idempotent.
+      description: Target active Helper acknowledges the latest request with current
+        case grant and every requested field scope. Repeated acknowledgment is idempotent.
+      responses:
+        '200':
+          description: Current saved state.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/ReviewHelpRecord
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^"[1-9][0-9]*"$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/components/schemas/ReviewHelpAction
+  /api/v1/complaints/{id}/review-help/respond:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    post:
+      tags:
+      - Helper
+      operationId: respondReviewHelp
+      summary: Target active Helper saves a response after acknowledging the latest
+        request. Does not change incident facts, authorize filing or resolve the complaint.
+        Same response can be recovered safely.
+      description: Target active Helper saves a response after acknowledging the latest
+        request. Does not change incident facts, authorize filing or resolve the complaint.
+        Same response can be recovered safely.
+      responses:
+        '200':
+          description: Current saved state.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/ReviewHelpRecord
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^"[1-9][0-9]*"$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas.yaml#/components/schemas/ReviewHelpReply
+  /api/v1/complaints/{id}/agent-progress:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - Citizen complaints
+      operationId: getCitizenAgentProgress
+      summary: Owning Citizen only. Latest ten saved LangGraph runs and actual tool
+        checkpoints, including skipped and blocked results. No fabricated progress or
+        raw tool payloads.
+      description: Owning Citizen only. Latest ten saved LangGraph runs and actual tool
+        checkpoints, including skipped and blocked results. No fabricated progress or
+        raw tool payloads.
+      responses:
+        '200':
+          description: Current saved state.
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas.yaml#/components/schemas/CitizenAgentProgress
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
   /api/v1/admin/complaints:
     get:
       tags: [Admin]

@@ -1,3 +1,4 @@
+import { useWorkflowCopy } from '@/i18n/workflowCopy';
 import { useEffect, useRef, useState } from 'react';
 import { Pause, Play, RotateCcw, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -177,6 +178,7 @@ function BrowserUrduAudioPlayer({
 }
 
 function SavedUrduAudioPlayer({title, complaint, kind = 'review', voiceTurnId, questionIndex = 0}: UrduAudioPlayerProps) {
+  const {copy} = useWorkflowCopy();
   const [allowed, setAllowed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
@@ -226,8 +228,8 @@ function SavedUrduAudioPlayer({title, complaint, kind = 'review', voiceTurnId, q
   return <section className="space-y-3 rounded-xl border border-blue-200 bg-blue-50/50 p-4" aria-label={title}>
     <h3 className="font-semibold">{title}</h3>
     {savedText ? <p dir="rtl" lang="ur" className="font-urdu whitespace-pre-wrap break-words text-right leading-loose [unicode-bidi:plaintext]" data-testid="saved-urdu-speech">{savedText}</p> : <p dir="rtl" lang="ur" className="font-urdu text-right leading-loose">اردو خلاصہ سننے اور پڑھنے کے لیے نیچے اجازت دے کر آڈیو بنائیں۔</p>}
-    <label className="flex items-start gap-3 text-sm leading-relaxed"><input className="mt-1 shrink-0" type="checkbox" checked={allowed} onChange={e => setAllowed(e.target.checked)} /><span>I consent to send this saved text to Gemini for Urdu translation when needed, and to gTTS for Urdu audio. Each permission can be withdrawn in sharing settings.</span></label>
-    <Button type="button" disabled={!allowed || !complaint || loading || (kind === 'review' && complaint.current_status !== 'CITIZEN_REVIEW')} onClick={() => void loadAudio()}>{loading ? 'Generating Urdu audio…' : 'Generate Urdu audio'}</Button>
+    <label className="flex items-start gap-3 text-sm leading-relaxed"><input className="mt-1 shrink-0" type="checkbox" checked={allowed} onChange={e => setAllowed(e.target.checked)} /><span>{copy("I consent to send this saved text to Gemini for Urdu translation when needed, and to gTTS for Urdu audio. Each permission can be withdrawn in sharing settings.")}</span></label>
+    <Button type="button" disabled={!allowed || !complaint || loading || (kind === 'review' && complaint.current_status !== 'CITIZEN_REVIEW')} onClick={() => void loadAudio()}>{loading ? copy('Generating Urdu audio.') : copy('Generate Urdu audio')}</Button>
     {url && <audio aria-label={title + ' playback'} controls src={url} />}
     {Boolean(error) && <ErrorBanner error={error} />}
   </section>;

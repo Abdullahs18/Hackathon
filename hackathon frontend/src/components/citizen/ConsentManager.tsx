@@ -1,3 +1,4 @@
+import { useWorkflowCopy } from '@/i18n/workflowCopy';
 import { useCallback, useEffect, useState } from 'react';
 import { dastakApi } from '@/lib/apiClient';
 import type { ComplaintRecord, ConsentRecord } from '@/types/dastak';
@@ -26,6 +27,7 @@ const SCOPE_LABELS:Record<string,string> = {
 };
 
 export function ConsentManager({complaintId, complaint, recommendedRecipient, onConsentsChange}: {complaintId:string; complaint?:ComplaintRecord; recommendedRecipient?:string|null; onConsentsChange?:(rows:ConsentRecord[])=>void}) {
+  const {copy} = useWorkflowCopy();
   const [rows, setRows] = useState<ConsentRecord[]>([]);
   const [selected, setSelected] = useState(recommendedRecipient ? 'workspace:'+recommendedRecipient : OPTIONS[0].recipient);
   const option = OPTIONS.find(o => o.recipient === selected) || OPTIONS[0];
@@ -74,16 +76,16 @@ export function ConsentManager({complaintId, complaint, recommendedRecipient, on
       setAllowedBundleKey(null);
     });
   }
-  return <section className="space-y-4" aria-label="Data sharing consent">
+  return <section id="sharing-settings" className="space-y-4 scroll-mt-48" aria-label="Data sharing consent">
     {Boolean(error) && <ErrorBanner error={error} />}
     <div className="space-y-4 rounded-xl border bg-muted/30 p-4" aria-label="Required complaint sharing">
-      <h3 className="font-semibold">Allow required complaint sharing</h3>
-      <p className="text-sm leading-relaxed">Review these recipients, then allow them together. This saves a separate permission for each recipient. It does not file your complaint. Helper access and voice providers are optional.</p>
-      {needs.length ? <ul className="space-y-3">{needs.map(need => <li key={need.recipient} className="min-w-0 text-sm leading-relaxed"><strong>{need.label}</strong> — {coversConsent(rows, need) ? 'Allowed' : 'Permission needed'}<p className="break-words text-muted-foreground">{need.data_scopes.map(scope => SCOPE_LABELS[scope] || scope).join(', ')}</p></li>)}</ul> : <p className="text-sm">Analyze the saved complaint to see its required recipients.</p>}
-      {missing.length > 0 ? <><label className="flex items-start gap-3 text-sm leading-relaxed"><input className="mt-1 shrink-0" type="checkbox" checked={bundleAllowed} onChange={event => setAllowedBundleKey(event.target.checked ? bundleKey : null)} /><span>I allow the listed required recipients to use the listed data for this simulated complaint.</span></label><Button type="button" className="h-auto min-h-11 whitespace-normal" disabled={busy || !bundleAllowed} onClick={() => void grantBundle()}>{busy ? 'Saving permissions…' : 'Allow required sharing'}</Button></> : needs.length > 0 && <p role="status" className="text-sm font-medium text-primary">All required sharing permissions are ready. You can review final submission approval below.</p>}
+      <h3 className="font-semibold">{copy("Allow required complaint sharing")}</h3>
+      <p className="text-sm leading-relaxed">{copy("Review these recipients, then allow them together. This saves a separate permission for each recipient. It does not file your complaint. Helper access and voice providers are optional.")}</p>
+      {needs.length ? <ul className="space-y-3">{needs.map(need => <li key={need.recipient} className="min-w-0 text-sm leading-relaxed"><strong>{copy(need.label)}</strong> — {copy(coversConsent(rows, need) ? 'Allowed' : 'Permission needed')}<p className="break-words text-muted-foreground">{need.data_scopes.map(scope => copy(SCOPE_LABELS[scope] || scope)).join(', ')}</p></li>)}</ul> : <p className="text-sm">Analyze the saved complaint to see its required recipients.</p>}
+      {missing.length > 0 ? <><label className="flex items-start gap-3 text-sm leading-relaxed"><input className="mt-1 shrink-0" type="checkbox" checked={bundleAllowed} onChange={event => setAllowedBundleKey(event.target.checked ? bundleKey : null)} /><span>{copy("I allow the listed required recipients to use the listed data for this simulated complaint.")}</span></label><Button type="button" className="h-auto min-h-11 whitespace-normal" disabled={busy || !bundleAllowed} onClick={() => void grantBundle()}>{copy(busy ? 'Saving permissions…' : 'Allow required sharing')}</Button></> : needs.length > 0 && <p role="status" className="text-sm font-medium text-primary">{copy("All required sharing permissions are ready. You can review final submission approval below.")}</p>}
     </div>
     <details className="space-y-4 rounded-lg border p-4">
-    <summary className="cursor-pointer font-medium">Manage individual permissions and optional services</summary>
+    <summary className="cursor-pointer font-medium">{copy("Manage individual permissions and optional services")}</summary>
     {rows.map(r => <article className="space-y-2 rounded border p-3 text-sm" key={r.consent_id}>
       <p className="font-semibold">{OPTIONS.find(o => o.recipient === r.recipient)?.label || r.recipient} · {r.status}</p>
       <p>{r.data_scopes.map(s=>SCOPE_LABELS[s] || s).join(', ')}</p>

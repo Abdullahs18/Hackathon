@@ -370,6 +370,30 @@ class VoiceTurn(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class ReviewHelpRequest(Base):
+    __tablename__ = "review_help_requests"
+    __table_args__ = (
+        UniqueConstraint("citizen_id", "idempotency_key", name="uq_review_help_key"),
+        CheckConstraint("requested_version >= 1", name="ck_review_help_version"),
+        CheckConstraint(
+            "status IN ('requested','acknowledged','completed','superseded')",
+            name="ck_review_help_status",
+        ),
+    )
+    request_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.complaint_id"), index=True)
+    citizen_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    helper_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
+    requested_version: Mapped[int]
+    idempotency_key: Mapped[str] = mapped_column(String(128))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(20))
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    note: Mapped[str | None] = mapped_column(Text)
+
+
 class CaseSpeech(Base):
     __tablename__ = "case_speech"
     __table_args__ = (UniqueConstraint("citizen_id", "idempotency_key", name="uq_speech_request"),)
