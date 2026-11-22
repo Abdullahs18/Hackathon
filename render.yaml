@@ -10,7 +10,7 @@ services:
     dockerCommand: python -m app.deploy
     autoDeployTrigger: checksPass
     healthCheckPath: /api/v1/health/ready
-    maxShutdownDelaySeconds: 120
+   
     envVars:
       - key: DASTAK_ENVIRONMENT
         value: production
