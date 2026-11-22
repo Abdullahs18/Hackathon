@@ -1034,7 +1034,12 @@ export function CitizenWizard() {
       {step === 1 && <Button type="button" variant="outline" onClick={() => setStep(0)}>{copy("Edit incident details")}</Button>}
       {step === 1 && (
         <div className="space-y-5">
-          {analysis && complaint && <AnalysisSuggestions key={complaint.version} analysis={analysis} complaint={complaint} onApplied={record => {syncFormFromComplaint(record); setAnalysis(null); setCitizenAuthorizedChecked(false); setStep(0);}} />}
+          {analysis && complaint && <AnalysisSuggestions key={complaint.version} analysis={analysis} complaint={complaint} onApplied={record => {
+            syncFormFromComplaint(record);
+            saveLocalDraft({complaintId:record.complaint_id,step:0,incident:record.incident_data,transcriptUrdu:record.incident_data.description || '',idempotencyKey,pendingRemoteSync:false});
+            markRemoteSynced(record.complaint_id);
+            setAnalysis(null); setCitizenAuthorizedChecked(false); setStep(0);
+          }} />}
           <Card className="border-border shadow-xs">
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">

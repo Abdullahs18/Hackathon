@@ -54,6 +54,13 @@ test('Typed AI suggestions require confirmation and preserve existing citizen fa
   expect(record.incident_data.amount).toBe(1500);
   expect(record.current_status).toBe('DRAFT');
   expect(record.submission_reference ?? null).toBeNull();
+  await page.goto('/citizen/complaints/'+record.complaint_id+'/wizard');
+  await expect(page.locator('#amount-pkr')).toHaveValue('1500');
+  await page.route(API+'/api/v1/complaints/'+record.complaint_id+'**', route=>route.abort('internetdisconnected'));
+  await page.reload();
+  await expect(page.locator('#amount-pkr')).toHaveValue('1500');
+  await expect(page.locator('#incident-description')).toHaveValue(statement);
+  await page.unroute(API+'/api/v1/complaints/'+record.complaint_id+'**');
 });
 
 test('Prepared form download and agent activity show the saved simulated receipt',async({page,request})=>{
