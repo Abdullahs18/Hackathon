@@ -111,26 +111,24 @@ export function CitizenComplaintDetail() {
 
   return (
     <div className="space-y-6">
-      {complaint && <EvidenceGallery complaintId={complaint.complaint_id} />}
-      {complaint && <ReviewConversation complaint={complaint} onChanged={setComplaint} />}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-xs sm:p-5">
         <div className="flex items-center gap-3">
           <Button asChild variant="outline" size="sm" className="min-h-10 gap-1.5">
             <Link to="/citizen">
-              <ArrowLeft className="h-4 w-4" aria-hidden />
+              <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden />
               <span>Dashboard</span>
             </Link>
           </Button>
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 dir="ltr" className="font-mono text-xl font-bold text-primary">
+              <h1 dir="ltr" className="break-all font-mono text-lg font-bold text-primary sm:text-xl">
                 {id}
               </h1>
               {complaint && (
                 <WorkflowStatusBadge status={complaint.current_status} />
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               Track progress, view attachments, and grant or withdraw consent.
             </p>
           </div>
@@ -163,9 +161,6 @@ export function CitizenComplaintDetail() {
       </div>
 
       <ErrorBanner error={error} onRetry={() => void loadComplaint()} />
-      {complaint && <ReviewHelpPanel complaint={complaint}/>}
-      {complaint && <PreparedComplaint complaint={complaint}/>}
-      {complaint?.agent_run_id && <AgentProgress complaintId={complaint.complaint_id}/>}
 
       {complaint && (
         <>
@@ -221,6 +216,12 @@ export function CitizenComplaintDetail() {
               </ol>
             </CardContent>
           </Card>
+
+          <ReviewHelpPanel complaint={complaint} />
+          <PreparedComplaint complaint={complaint} />
+          {complaint.agent_run_id && (
+            <AgentProgress complaintId={complaint.complaint_id} />
+          )}
 
           {/* INCIDENT & DRAFT RECORD */}
           <Card className="border-border shadow-xs">
@@ -314,6 +315,10 @@ export function CitizenComplaintDetail() {
             onUploaded={handleEvidenceUploaded}
             disabled={complaint.current_status === 'RESOLVED'}
           />
+
+          <EvidenceGallery complaintId={complaint.complaint_id} />
+
+          <ReviewConversation complaint={complaint} onChanged={setComplaint} />
 
           <Card className="border-border shadow-xs">
             <CardHeader>

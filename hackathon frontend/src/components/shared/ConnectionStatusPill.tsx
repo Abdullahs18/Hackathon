@@ -41,10 +41,10 @@ export function ConnectionStatusPill() {
       role="status"
       aria-live="polite"
       title={label}
-      className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium ${tone}`}
+      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold whitespace-nowrap ${tone}`}
     >
       {icon}
-      <span className={compactOnMobile ? 'hidden lg:inline' : 'hidden sm:inline'}>
+      <span className={compactOnMobile ? 'hidden md:inline' : 'hidden sm:inline'}>
         {label}
       </span>
       {USE_MOCK && <span className="sr-only">{t('header.mockApi')}</span>}

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useWorkflowCopy } from '@/i18n/workflowCopy';
 import { dastakApi, USE_MOCK } from '@/lib/apiClient';
 import type { EvidenceRecord } from '@/types/dastak';
 import { Button } from '@/components/ui/button';
 import { ErrorBanner } from './ErrorBanner';
 
 export function EvidenceGallery({complaintId}: {complaintId:string}) {
+  const {copy} = useWorkflowCopy();
   const [files, setFiles] = useState<EvidenceRecord[]>([]);
   const [error, setError] = useState<unknown>(null);
   const [opened, setOpened] = useState<{url:string; file:EvidenceRecord} | null>(null);
@@ -36,18 +38,23 @@ export function EvidenceGallery({complaintId}: {complaintId:string}) {
     } catch(cause) { setError(cause); }
     finally { if(current===generation.current) setBusy(false); }
   }
-  return <section className="space-y-3 rounded-xl border p-4" aria-label="Private evidence">
-    <h3 className="font-semibold">Private evidence</h3>
-    <p className="text-sm">Citizen-supplied originals; not authenticity-verified.</p>
-    <Button variant="outline" type="button" onClick={() => void refresh()}>Refresh evidence</Button>
+  return <section className="space-y-3 rounded-xl border border-border bg-card p-5 shadow-xs" aria-label="Private evidence">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <h3 className="text-base font-semibold text-foreground">{copy("Private evidence")}</h3>
+        <p className="text-xs text-muted-foreground">{copy("Citizen-supplied originals; not authenticity-verified.")}</p>
+      </div>
+      <Button variant="outline" size="sm" type="button" onClick={() => void refresh()}>{copy("Refresh evidence")}</Button>
+    </div>
     {Boolean(error) && <ErrorBanner error={error} />}
-    {files.map(f=><article key={f.evidence_id} className="space-y-1 rounded border p-2 text-sm">
-      <p>{f.file_name} · {f.file_size} bytes</p><p className="break-all font-mono text-xs">Recorded SHA-256: {f.sha256}</p>
-      <Button variant="outline" type="button" disabled={busy} onClick={() => void open(f)}>Open {f.file_name}</Button>
+    {files.map(f=><article key={f.evidence_id} className="space-y-1.5 rounded-lg border border-border/80 bg-muted/20 p-3 text-sm">
+      <p className="font-medium text-foreground">{f.file_name} · <span className="text-xs text-muted-foreground">{f.file_size} bytes</span></p>
+      <p dir="ltr" className="break-all font-mono text-xs text-muted-foreground">Recorded SHA-256: {f.sha256}</p>
+      <Button variant="outline" size="sm" type="button" disabled={busy} onClick={() => void open(f)}>Open {f.file_name}</Button>
     </article>)}
-    {opened && <div className="space-y-2">
-      {opened.file.file_type.startsWith('image/') && <img src={opened.url} alt={opened.file.file_name} className="max-h-96 object-contain" />}
-      <a className="underline" href={opened.url} download={opened.file.file_name}>Download original {opened.file.file_name}</a>
+    {opened && <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
+      {opened.file.file_type.startsWith('image/') && <img src={opened.url} alt={opened.file.file_name} className="max-h-96 rounded-md object-contain" />}
+      <a className="inline-block text-sm font-medium text-primary underline" href={opened.url} download={opened.file.file_name}>Download original {opened.file.file_name}</a>
     </div>}
   </section>;
 }

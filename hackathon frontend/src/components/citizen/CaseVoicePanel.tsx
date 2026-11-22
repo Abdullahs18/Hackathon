@@ -111,18 +111,19 @@ export function CaseVoicePanel({complaint, ensureComplaint, onConfirmed}: Props)
     showTurn(null);
   }
 
-  return <section className="space-y-3 rounded-xl border p-4" aria-label="Saved complaint voice input">
-    <h3 className="font-semibold">{copy("Urdu voice input")}</h3>
+  return <section className="space-y-3 rounded-xl border border-border bg-muted/20 p-4" aria-label="Saved complaint voice input">
+    <h3 className="text-sm font-semibold text-foreground">{copy("Urdu voice input")}</h3>
     <UrduVoiceRecorder onTranscriptCaptured={() => {}} onRecordingReady={recordingReady} disabled={busy} />
-    <label className="block text-sm">{copy("Or choose an audio recording (5 MiB, 60 seconds)")}
-      <input aria-label="Upload Urdu recording" type="file" accept="audio/*,.ogg,.webm,.m4a" disabled={busy} onChange={e => { const file=e.target.files?.[0]; if(file) recordingReady(file); }} />
+    <label className="block space-y-1.5 text-sm font-medium text-foreground">
+      <span>{copy("Or choose an audio recording (5 MiB, 60 seconds)")}</span>
+      <input aria-label="Upload Urdu recording" type="file" accept="audio/*,.ogg,.webm,.m4a" disabled={busy} className="block w-full cursor-pointer rounded-lg border border-input bg-background px-3 py-2 text-xs text-muted-foreground file:me-3 file:rounded-md file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary hover:file:bg-primary/20" onChange={e => { const file=e.target.files?.[0]; if(file) recordingReady(file); }} />
     </label>
-    <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={allowed} onChange={e => setAllowed(e.target.checked)} />
-      {copy("I consent to send this recording and transcript to Gemini for this complaint. No filing is authorized.")}
+    <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border/80 bg-card p-3 text-sm leading-relaxed"><input className="mt-1 shrink-0 accent-primary" type="checkbox" checked={allowed} onChange={e => setAllowed(e.target.checked)} />
+      <span>{copy("I consent to send this recording and transcript to Gemini for this complaint. No filing is authorized.")}</span>
     </label>
     <div className="flex flex-wrap gap-2">
       <Button type="button" disabled={!allowed || !blob || busy} onClick={() => void process()}>{copy("Transcribe recording")}</Button>
-      {complaint && <Button type="button" variant="outline" disabled={busy} onClick={() => void recover()}>Recover saved voice progress</Button>}
+      {complaint && <Button type="button" variant="outline" disabled={busy} onClick={() => void recover()}>{copy("Recover saved voice progress")}</Button>}
     </div>
     {busy && <p role="status">Processing saved voice work…</p>}
     {Boolean(error) && <ErrorBanner error={error} />}

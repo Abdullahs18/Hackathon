@@ -29,12 +29,14 @@ import {
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { WorkflowStatusBadge } from '@/components/shared/StatusBadge';
 import { useAuth } from '@/context/AuthContext';
+import { useWorkflowCopy } from '@/i18n/workflowCopy';
 import { dastakApi } from '@/lib/apiClient';
 import { getWorkspaceName } from '@/lib/workspaceMeta';
 import type { ComplaintRecord } from '@/types/dastak';
 
 export function OfficerDashboard() {
   const { user } = useAuth();
+  const { copy } = useWorkflowCopy();
   const navigate = useNavigate();
 
   const [cases, setCases] = useState<ComplaintRecord[]>([]);
@@ -68,15 +70,15 @@ export function OfficerDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-5 shadow-xs sm:flex-row sm:items-center">
+      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-indigo-200 bg-indigo-50/50 p-5 shadow-xs sm:flex-row sm:items-center">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <Building2 className="h-5 w-5 text-indigo-800" aria-hidden />
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              {getWorkspaceName(user?.workspace_id)}
+              {copy(getWorkspaceName(user?.workspace_id))}
             </h1>
             <Badge className="bg-indigo-800 text-white">
-              Simulated Workspace • Tenant Isolated
+              {copy("Simulated Workspace • Tenant Isolated")}
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -93,13 +95,13 @@ export function OfficerDashboard() {
           size="sm"
           disabled={loading}
           onClick={() => void loadQueue()}
-          className="min-h-10 gap-1.5 bg-white"
+          className="min-h-10 gap-1.5 bg-card"
         >
           <RefreshCw
             className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`}
             aria-hidden
           />
-          <span>Refresh Queue</span>
+          <span>{copy("Refresh Queue")}</span>
         </Button>
       </div>
 
@@ -108,7 +110,7 @@ export function OfficerDashboard() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <ShieldCheck className="h-4 w-4 text-primary" aria-hidden />
-            <span>Direct Case Review & Workspace Isolation Check</span>
+            <span>{copy("Direct Case Review & Workspace Isolation Check")}</span>
           </CardTitle>
           <CardDescription>
             Enter a complaint ID (e.g.{' '}
@@ -123,11 +125,12 @@ export function OfficerDashboard() {
               value={lookupId}
               onChange={(e) => setLookupId(e.target.value)}
               placeholder="e.g., CMP-2026-004"
+              dir="ltr"
               className="min-h-11 max-w-xs font-mono"
             />
             <Button type="submit" variant="outline" className="min-h-11 gap-1.5">
               <Search className="h-4 w-4" aria-hidden />
-              <span>Inspect Case</span>
+              <span>{copy("Inspect Case")}</span>
             </Button>
           </form>
         </CardContent>
@@ -138,18 +141,17 @@ export function OfficerDashboard() {
       <Card className="border-border shadow-xs">
         <CardHeader>
           <CardTitle className="text-lg">
-            Assigned Workspace Queue ({cases.length})
+            {copy("Assigned Workspace Queue")} ({cases.length})
           </CardTitle>
           <CardDescription>
-            Standard chronological queue (no AI priority or confidence sorting).
-            Officers make the final review decision.
+            {copy("Standard chronological queue (no AI priority or confidence sorting). Officers make the final review decision.")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading && cases.length === 0 ? (
             <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <span>Loading assigned cases…</span>
+              <span>{copy("Loading assigned cases…")}</span>
             </div>
           ) : cases.length === 0 ? (
             <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
@@ -160,12 +162,12 @@ export function OfficerDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Complaint ID</TableHead>
-                  <TableHead>Citizen</TableHead>
-                  <TableHead>Incident Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Rule Version</TableHead>
-                  <TableHead className="text-end">Action</TableHead>
+                  <TableHead>{copy("Complaint ID")}</TableHead>
+                  <TableHead>{copy("Citizen")}</TableHead>
+                  <TableHead>{copy("Incident Type")}</TableHead>
+                  <TableHead>{copy("Status")}</TableHead>
+                  <TableHead>{copy("Rule Version")}</TableHead>
+                  <TableHead className="text-end">{copy("Action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -191,8 +193,8 @@ export function OfficerDashboard() {
                         <Link
                           to={`/officer/complaints/${encodeURIComponent(item.complaint_id)}`}
                         >
-                          <span>Review</span>
-                          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                          <span>{copy("Review")}</span>
+                          <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
                         </Link>
                       </Button>
                     </TableCell>

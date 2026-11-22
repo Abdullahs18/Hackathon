@@ -879,9 +879,9 @@ export function CitizenWizard() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="yes">Yes — Money was transferred</SelectItem>
+                    <SelectItem value="yes">{copy("Yes — Money was transferred")}</SelectItem>
                     <SelectItem value="no">
-                      No — Attempt failed / no loss
+                      {copy("No — Attempt failed / no loss")}
                     </SelectItem>
                     <SelectItem value="unknown">{copy("Not sure yet")}</SelectItem>
                   </SelectContent>
@@ -902,7 +902,7 @@ export function CitizenWizard() {
                     const val = e.target.value;
                     updateField('amount', val === '' ? null : Number(val));
                   }}
-                  placeholder="e.g., 15000"
+                  placeholder={copy("e.g., 15000")}
                   className="min-h-11 font-mono"
                 />
               </div>
@@ -988,7 +988,7 @@ export function CitizenWizard() {
                     .filter(Boolean);
                   updateField('suspect_details', arr);
                 }}
-                placeholder="e.g., +92-300-0000999, relief-verify-demo.example"
+                placeholder={copy("e.g., +92-300-0000999, relief-verify-demo.example")}
                 className="min-h-11 font-mono"
               />
             </div>

@@ -119,26 +119,30 @@ export function CitizenDashboard() {
       {/* Hero action card */}
       <section
         aria-labelledby="hero-title"
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--hero-from)] to-[var(--hero-to)] p-6 text-white shadow-lg sm:p-8"
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--hero-from)] to-[var(--hero-to)] p-6 text-white shadow-lg ring-1 ring-white/15 sm:p-8"
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute -end-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl"
+          className="pointer-events-none absolute -end-16 -top-16 h-60 w-60 rounded-full bg-white/12 blur-2xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-20 start-1/3 h-44 w-44 rounded-full bg-white/8 blur-3xl"
         />
         <div className="relative flex flex-col items-center gap-6 text-center md:flex-row md:text-start">
           <div className="flex-1 space-y-3">
-            <p className="text-sm font-semibold text-emerald-100">
+            <p className="text-sm font-semibold text-white/90">
               {t('cit.welcome', { name })}
             </p>
-            <h1 id="hero-title" className="text-2xl font-bold tracking-tight sm:text-3xl">
+            <h1 id="hero-title" className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
               {t('cit.heroTitle')}
             </h1>
-            <p className="max-w-xl text-base text-emerald-50/95">{t('cit.heroDesc')}</p>
+            <p className="max-w-xl text-base leading-relaxed text-white/90">{t('cit.heroDesc')}</p>
             <div className="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center">
               <m.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                 <Link
                   to="/citizen/new?mode=voice"
-                  className="inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-white px-6 text-lg font-bold text-[#0f5132] shadow-md transition-colors hover:bg-emerald-50 sm:w-auto"
+                  className="inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-[#ffffff] px-6 text-lg font-bold text-[#0f5132] shadow-md ring-1 ring-white/40 transition-colors hover:bg-[#ecfdf5] dark:bg-[#ecfdf5] dark:text-[#05261b] dark:hover:bg-[#ffffff] sm:w-auto"
                 >
                   <span className="relative flex h-10 w-10 items-center justify-center">
                     <span aria-hidden className="hero-ring absolute inset-0 rounded-full bg-[#0f5132]/40" />
@@ -153,14 +157,14 @@ export function CitizenDashboard() {
               <m.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                 <Link
                   to="/citizen/new?mode=text"
-                  className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full border-2 border-white/70 px-6 text-base font-semibold text-white transition-colors hover:bg-white/15 sm:w-auto"
+                  className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full border-2 border-white/75 bg-white/5 px-6 text-base font-semibold text-white backdrop-blur-xs transition-colors hover:bg-white/15 sm:w-auto"
                 >
                   <Keyboard className="h-5 w-5" aria-hidden />
                   <span>{t('cit.type')}</span>
                 </Link>
               </m.div>
             </div>
-            <p className="text-xs text-emerald-100/90">{t('cit.speakHint')}</p>
+            <p className="text-xs font-medium text-white/80">{t('cit.speakHint')}</p>
           </div>
         </div>
       </section>

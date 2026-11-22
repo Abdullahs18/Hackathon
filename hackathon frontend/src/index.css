@@ -313,4 +313,10 @@ textarea.font-urdu, input.font-urdu { line-height: 2.1; font-size: 1.125rem; }
 .dark .border-\[\#EF4444\] { border-color: #a33a3a; }
 .dark .border-\[\#F59E0B\] { border-color: #a8700a; }
 
+/* Consistent native <select> sizing without Chromium arrow wrapping (LTR + RTL + Dark Mode) */
+.dastak-select {
+  display: inline-block;
+  padding-inline: 0.75rem;
+}
+
 

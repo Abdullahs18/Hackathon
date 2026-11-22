@@ -88,12 +88,12 @@ export function WorkflowSteps({
                     index + 1
                   )}
                 </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-xs font-semibold sm:text-sm">
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs leading-snug font-semibold sm:text-sm">
                     {step.title}
                   </span>
                   {step.subtitle && (
-                    <span className="block truncate text-[11px] opacity-80">
+                    <span className="block text-[11px] leading-snug opacity-80">
                       {step.subtitle}
                     </span>
                   )}

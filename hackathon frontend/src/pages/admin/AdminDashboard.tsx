@@ -60,22 +60,22 @@ export function AdminDashboard() {
         }}
         className="space-y-4"
       >
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl border border-border bg-muted p-1 sm:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 items-stretch gap-1.5 rounded-2xl border border-border bg-muted/90 p-1.5 group-data-[orientation=horizontal]/tabs:h-auto sm:grid-cols-4">
           {TABS.map((tab) => (
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className="relative min-h-11 rounded-lg text-xs data-[state=active]:bg-transparent data-[state=active]:text-primary-foreground data-[state=active]:shadow-none sm:text-sm dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent dark:data-[state=active]:text-primary-foreground"
+              className="relative h-auto min-h-10 rounded-xl px-3 py-2 text-xs font-semibold data-[state=active]:bg-transparent data-[state=active]:text-primary-foreground data-[state=active]:shadow-none sm:text-sm dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent dark:data-[state=active]:text-primary-foreground"
             >
               {activeTab === tab.value && (
                 <m.span
                   layoutId="admin-tab-pill"
                   aria-hidden
-                  className="absolute inset-0 rounded-lg bg-primary shadow-sm"
+                  className="absolute inset-0 rounded-xl bg-primary shadow-sm"
                   transition={{ type: 'spring', stiffness: 500, damping: 36 }}
                 />
               )}
-              <span className="relative">{t(tab.label)}</span>
+              <span className="relative z-10">{t(tab.label)}</span>
             </TabsTrigger>
           ))}
         </TabsList>

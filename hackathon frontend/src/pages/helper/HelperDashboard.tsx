@@ -21,11 +21,13 @@ import { Input } from '@/components/ui/input';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { WorkflowStatusBadge } from '@/components/shared/StatusBadge';
 import { useAuth } from '@/context/AuthContext';
+import { useWorkflowCopy } from '@/i18n/workflowCopy';
 import { dastakApi } from '@/lib/apiClient';
 import type { ComplaintRecord } from '@/types/dastak';
 
 export function HelperDashboard() {
   const { user } = useAuth();
+  const { copy } = useWorkflowCopy();
   const navigate = useNavigate();
 
   const [cases, setCases] = useState<ComplaintRecord[]>([]);
@@ -59,14 +61,14 @@ export function HelperDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-card p-5 shadow-xs sm:flex-row sm:items-center">
+      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-border bg-card p-5 shadow-xs sm:flex-row sm:items-center">
         <div className="space-y-1">
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
             <Users className="h-6 w-6 text-primary" aria-hidden />
-            <span>Community Helper Workspace</span>
+            <span>{copy("Community Helper Workspace")}</span>
           </h1>
           <p className="text-sm text-muted-foreground">
-            Signed in as <span className="font-mono">{user?.user_id}</span>.
+            Signed in as <span className="font-mono text-foreground">{user?.user_id}</span>.
             Assist multiple citizens only on cases with an active case-level
             access grant and active citizen consent.
           </p>
@@ -84,14 +86,14 @@ export function HelperDashboard() {
             className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`}
             aria-hidden
           />
-          <span>Refresh Authorized Cases</span>
+          <span>{copy("Refresh Authorized Cases")}</span>
         </Button>
       </div>
 
       <Alert className="border-blue-200 bg-blue-50/70 text-blue-950">
         <Info className="h-4 w-4 text-[#1D4ED8]" aria-hidden />
         <AlertTitle className="font-semibold">
-          Helper Permission Boundary
+          {copy("Helper Permission Boundary")}
         </AlertTitle>
         <AlertDescription className="text-xs">
           Helpers can add supporting information and upload evidence on
@@ -105,7 +107,7 @@ export function HelperDashboard() {
       <Card className="border-border shadow-xs">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">
-            Open Case by ID (Permission Check)
+            {copy("Open Case by ID (Permission Check)")}
           </CardTitle>
           <CardDescription>
             Enter any complaint ID (for example{' '}
@@ -119,11 +121,12 @@ export function HelperDashboard() {
               value={lookupId}
               onChange={(e) => setLookupId(e.target.value)}
               placeholder="e.g., CMP-2026-004"
+              dir="ltr"
               className="min-h-11 max-w-xs font-mono"
             />
             <Button type="submit" variant="outline" className="min-h-11 gap-1.5">
               <Search className="h-4 w-4" aria-hidden />
-              <span>Open Case</span>
+              <span>{copy("Open Case")}</span>
             </Button>
           </form>
         </CardContent>
@@ -133,23 +136,22 @@ export function HelperDashboard() {
 
       <div className="space-y-3">
         <h2 className="text-lg font-semibold text-foreground">
-          Authorized Multi-Citizen Cases ({cases.length})
+          {copy("Authorized Multi-Citizen Cases")} ({cases.length})
         </h2>
 
         {loading && cases.length === 0 ? (
           <Card>
             <CardContent className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <span>Loading authorized cases…</span>
+              <span>{copy("Loading authorized cases…")}</span>
             </CardContent>
           </Card>
         ) : cases.length === 0 ? (
           <Card>
             <CardHeader>
-              <CardTitle>No authorized cases</CardTitle>
+              <CardTitle>{copy("No authorized cases")}</CardTitle>
               <CardDescription>
-                No citizens currently have an active access grant and consent
-                for this helper account.
+                {copy("No citizens currently have an active access grant and consent for this helper account.")}
               </CardDescription>
             </CardHeader>
           </Card>
@@ -208,8 +210,8 @@ export function HelperDashboard() {
                     <Link
                       to={`/helper/complaints/${encodeURIComponent(item.complaint_id)}`}
                     >
-                      <span>Assist Case</span>
-                      <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                      <span>{copy("Assist Case")}</span>
+                      <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
                     </Link>
                   </Button>
                 </CardContent>

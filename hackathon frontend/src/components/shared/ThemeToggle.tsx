@@ -28,7 +28,7 @@ export function ThemeToggle() {
           className="inline-flex"
         >
           {dark ? (
-            <Sun className="h-5 w-5 text-amber-400" aria-hidden />
+            <Sun className="h-5 w-5 text-[#fbbf24]" aria-hidden />
           ) : (
             <Moon className="h-5 w-5" aria-hidden />
           )}

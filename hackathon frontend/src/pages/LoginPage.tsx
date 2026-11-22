@@ -76,8 +76,8 @@ export function LoginPage() {
         <PrototypeBanner />
       </div>
 
-      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10 lg:py-14">
-        <div className="mb-7 flex items-center justify-between gap-3 sm:mb-8">
+      <main className="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-8 lg:py-10">
+        <div className="mb-5 flex items-center justify-between gap-3 sm:mb-7">
           <div className="flex items-center gap-3">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md ring-1 ring-white/20">
               <ShieldCheck className="h-6 w-6" aria-hidden />
@@ -262,16 +262,30 @@ export function LoginPage() {
                 </CardContent>
               </Card>
             ) : (
-              <Card className="border-border shadow-xs">
-                <CardHeader>
-                  <CardTitle>{t('login.liveTitle')}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
+              <Card className="flex h-full flex-col justify-between border-border bg-card/95 shadow-sm">
+                <CardHeader className="space-y-2 pb-4">
+                  <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900">
+                    <span className="h-2 w-2 rounded-full bg-primary" aria-hidden />
+                    <span>{t('header.liveApi')}</span>
+                  </div>
+                  <CardTitle className="text-xl tracking-tight">{t('login.liveTitle')}</CardTitle>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
                     {t('login.liveDesc', { url: API_BASE_URL })}
                   </p>
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm text-muted-foreground">
-                  <p>{t('login.liveRoles')}</p>
-                  <p>{t('login.liveSim')}</p>
+                <CardContent className="space-y-4 text-sm text-muted-foreground">
+                  <div className="grid gap-2.5 sm:grid-cols-2">
+                    {(['Citizen', 'Helper', 'Officer', 'Admin'] as const).map((role) => (
+                      <div key={role} className="flex items-center gap-2 rounded-xl border border-border/80 bg-muted/35 p-3">
+                        <RoleBadge role={role} />
+                        <span className="text-xs font-medium text-foreground">{t(`role.${role}`)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="leading-relaxed">{t('login.liveRoles')}</p>
+                  <p className="rounded-xl border border-border/70 bg-muted/40 p-3.5 text-xs leading-relaxed">
+                    {t('login.liveSim')}
+                  </p>
                 </CardContent>
               </Card>
             )}

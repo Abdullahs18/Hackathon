@@ -78,31 +78,38 @@ export function ConsentManager({complaintId, complaint, recommendedRecipient, on
   }
   return <section id="sharing-settings" className="space-y-4 scroll-mt-48" aria-label="Data sharing consent">
     {Boolean(error) && <ErrorBanner error={error} />}
-    <div className="space-y-4 rounded-xl border bg-muted/30 p-4" aria-label="Required complaint sharing">
-      <h3 className="font-semibold">{copy("Allow required complaint sharing")}</h3>
-      <p className="text-sm leading-relaxed">{copy("Review these recipients, then allow them together. This saves a separate permission for each recipient. It does not file your complaint. Helper access and voice providers are optional.")}</p>
-      {needs.length ? <ul className="space-y-3">{needs.map(need => <li key={need.recipient} className="min-w-0 text-sm leading-relaxed"><strong>{copy(need.label)}</strong> — {copy(coversConsent(rows, need) ? 'Allowed' : 'Permission needed')}<p className="break-words text-muted-foreground">{need.data_scopes.map(scope => copy(SCOPE_LABELS[scope] || scope)).join(', ')}</p></li>)}</ul> : <p className="text-sm">Analyze the saved complaint to see its required recipients.</p>}
-      {missing.length > 0 ? <><label className="flex items-start gap-3 text-sm leading-relaxed"><input className="mt-1 shrink-0" type="checkbox" checked={bundleAllowed} onChange={event => setAllowedBundleKey(event.target.checked ? bundleKey : null)} /><span>{copy("I allow the listed required recipients to use the listed data for this simulated complaint.")}</span></label><Button type="button" className="h-auto min-h-11 whitespace-normal" disabled={busy || !bundleAllowed} onClick={() => void grantBundle()}>{copy(busy ? 'Saving permissions…' : 'Allow required sharing')}</Button></> : needs.length > 0 && <p role="status" className="text-sm font-medium text-primary">{copy("All required sharing permissions are ready. You can review final submission approval below.")}</p>}
+    <div className="space-y-4 rounded-xl border border-border bg-muted/30 p-4" aria-label="Required complaint sharing">
+      <h3 className="font-semibold text-foreground">{copy("Allow required complaint sharing")}</h3>
+      <p className="text-sm leading-relaxed text-muted-foreground">{copy("Review these recipients, then allow them together. This saves a separate permission for each recipient. It does not file your complaint. Helper access and voice providers are optional.")}</p>
+      {needs.length ? <ul className="space-y-2.5">{needs.map(need => <li key={need.recipient} className="min-w-0 rounded-lg border border-border/70 bg-card p-3 text-sm leading-relaxed"><div className="flex flex-wrap items-center justify-between gap-2"><span><strong className="text-foreground">{copy(need.label)}</strong><span className="text-muted-foreground"> — </span><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${coversConsent(rows, need) ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900'}`}>{copy(coversConsent(rows, need) ? 'Allowed' : 'Permission needed')}</span></span></div><p className="mt-1 break-words text-xs text-muted-foreground">{need.data_scopes.map(scope => copy(SCOPE_LABELS[scope] || scope)).join(', ')}</p></li>)}</ul> : <p className="text-sm text-muted-foreground">{copy("Analyze the saved complaint to see its required recipients.")}</p>}
+      {missing.length > 0 ? <><label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 bg-card p-3 text-sm leading-relaxed"><input className="mt-1 shrink-0 accent-primary" type="checkbox" checked={bundleAllowed} onChange={event => setAllowedBundleKey(event.target.checked ? bundleKey : null)} /><span>{copy("I allow the listed required recipients to use the listed data for this simulated complaint.")}</span></label><Button type="button" className="h-auto min-h-11 whitespace-normal" disabled={busy || !bundleAllowed} onClick={() => void grantBundle()}>{copy(busy ? 'Saving permissions…' : 'Allow required sharing')}</Button></> : needs.length > 0 && <p role="status" className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm font-medium text-emerald-950">{copy("All required sharing permissions are ready. You can review final submission approval below.")}</p>}
     </div>
-    <details className="space-y-4 rounded-lg border p-4">
-    <summary className="cursor-pointer font-medium">{copy("Manage individual permissions and optional services")}</summary>
-    {rows.map(r => <article className="space-y-2 rounded border p-3 text-sm" key={r.consent_id}>
-      <p className="font-semibold">{OPTIONS.find(o => o.recipient === r.recipient)?.label || r.recipient} · {r.status}</p>
-      <p>{r.data_scopes.map(s=>SCOPE_LABELS[s] || s).join(', ')}</p>
-      {r.status === 'granted' && <Button type="button" variant="outline" disabled={busy} onClick={() => void command(() => dastakApi.withdrawConsent(r.consent_id))}>Withdraw {OPTIONS.find(o => o.recipient === r.recipient)?.label || r.recipient}</Button>}
-      {r.recipient.startsWith('user:') && <Button type="button" variant="outline" disabled={busy} onClick={() => void command(() => dastakApi.revokeHelper(complaintId,r.recipient.slice(5)))}>Revoke helper access</Button>}
+    <details className="space-y-4 rounded-xl border border-border bg-card p-4">
+    <summary className="cursor-pointer text-sm font-semibold text-foreground select-none">{copy("Manage individual permissions and optional services")}</summary>
+    <div className="space-y-3 pt-2">
+    {rows.map(r => <article className="space-y-2 rounded-lg border border-border/80 bg-muted/20 p-3 text-sm" key={r.consent_id}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="font-semibold text-foreground">{OPTIONS.find(o => o.recipient === r.recipient)?.label || r.recipient} · <span className={r.status === 'granted' ? 'text-primary' : 'text-muted-foreground'}>{r.status}</span></p>
+      </div>
+      <p className="text-xs text-muted-foreground">{r.data_scopes.map(s=>SCOPE_LABELS[s] || s).join(', ')}</p>
+      <div className="flex flex-wrap gap-2">
+        {r.status === 'granted' && <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void command(() => dastakApi.withdrawConsent(r.consent_id))}>Withdraw {OPTIONS.find(o => o.recipient === r.recipient)?.label || r.recipient}</Button>}
+        {r.recipient.startsWith('user:') && <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void command(() => dastakApi.revokeHelper(complaintId,r.recipient.slice(5)))}>Revoke helper access</Button>}
+      </div>
     </article>)}
-    <label className="block text-sm">Recipient and purpose
-      <select aria-label="Consent recipient" className="block w-full rounded border bg-background p-2" value={selected} onChange={e => {setSelected(e.target.value); setScopes(OPTIONS.find(o => o.recipient === e.target.value)!.scopes);}}>
+    <label className="block space-y-1.5 text-sm font-medium text-foreground">
+      <span>{copy("Recipient and purpose")}</span>
+      <select aria-label="Consent recipient" className="dastak-select h-10 w-full rounded-lg border border-input bg-background ps-3 py-2 text-sm text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" value={selected} onChange={e => {setSelected(e.target.value); setScopes(OPTIONS.find(o => o.recipient === e.target.value)!.scopes);}}>
         {OPTIONS.map(o => <option key={o.recipient} value={o.recipient}>{o.label}</option>)}
       </select>
     </label>
-    <div className="flex flex-wrap gap-3">{option.scopes.map(s => <label className="flex gap-2 text-sm" key={s}><input type="checkbox" checked={scopes.includes(s)} onChange={e => setScopes(prev => e.target.checked ? [...prev,s] : prev.filter(v => v !== s))} />{SCOPE_LABELS[s] || s}</label>)}</div>
+    <div className="flex flex-wrap gap-2.5">{option.scopes.map(s => <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border/80 bg-muted/30 px-3 py-1.5 text-sm transition-colors hover:border-primary/40" key={s}><input type="checkbox" className="accent-primary" checked={scopes.includes(s)} onChange={e => setScopes(prev => e.target.checked ? [...prev,s] : prev.filter(v => v !== s))} /><span>{SCOPE_LABELS[s] || s}</span></label>)}</div>
     <Button type="button" disabled={busy || !scopes.length} onClick={() => void command(async () => {
       if(option.recipient.startsWith('user:')) await dastakApi.grantHelper(complaintId,option.recipient.slice(5));
       const existing=rows.find(r=>r.recipient===option.recipient && r.purpose===option.purpose && r.status==='granted');
       return existing ? dastakApi.changeConsent(existing.consent_id,{data_scopes:scopes}) : dastakApi.grantConsent(complaintId,{recipient:option.recipient,purpose:option.purpose,data_scopes:scopes});
     })}>{busy ? 'Saving consent…' : option.recipient.startsWith('user:') ? 'Grant helper access and selected consent' : 'Grant selected consent'}</Button>
+    </div>
     </details>
   </section>;
 }

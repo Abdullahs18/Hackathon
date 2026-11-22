@@ -51,7 +51,7 @@ function UserMenu() {
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
             {initials(name)}
           </span>
-          <span className="hidden max-w-32 truncate md:inline">{name}</span>
+          <span className="hidden max-w-44 truncate md:inline lg:max-w-52">{name}</span>
           <ChevronDown
             className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180"
             aria-hidden
@@ -150,32 +150,33 @@ export function AppShell({ children }: { children: ReactNode }) {
     )
     .sort((a, b) => b.to.length - a.to.length)[0]?.to;
 
-  const nav = user && navItems.length > 0 && (
-    <nav aria-label={t('nav.main')} className="flex items-center gap-1 rounded-full border border-border/70 bg-muted/80 p-1 shadow-inner">
-      {navItems.map((item) => {
-        const active = item.to === activeTo;
-        return (
-          <Link
-            key={item.to}
-            to={item.to}
-            aria-current={active ? 'page' : undefined}
-            className={`relative inline-flex min-h-10 items-center rounded-full px-3.5 text-sm font-semibold whitespace-nowrap transition-colors ${
-              active ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {active && (
-              <m.span
-                layoutId="nav-pill"
-                className="absolute inset-0 rounded-full bg-primary shadow-sm"
-                transition={{ type: 'spring', stiffness: 500, damping: 36 }}
-              />
-            )}
-            <span className="relative">{item.label}</span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
+  const renderNav = (scope: 'desktop' | 'mobile') =>
+    user && navItems.length > 0 ? (
+      <nav aria-label={t('nav.main')} className="flex items-center gap-1 rounded-full border border-border/80 bg-muted/85 p-1 shadow-inner">
+        {navItems.map((item) => {
+          const active = item.to === activeTo;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              aria-current={active ? 'page' : undefined}
+              className={`relative inline-flex min-h-10 items-center rounded-full px-4 text-sm font-semibold whitespace-nowrap transition-colors ${
+                active ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {active && (
+                <m.span
+                  layoutId={`nav-pill-${scope}`}
+                  className="absolute inset-0 rounded-full bg-primary shadow-sm"
+                  transition={{ type: 'spring', stiffness: 500, damping: 36 }}
+                />
+              )}
+              <span className="relative z-10">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    ) : null;
 
   return (
     <div className="civic-canvas min-h-screen bg-background text-foreground">
@@ -201,7 +202,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             </Link>
 
-            <div className="hidden md:block md:ms-3">{nav}</div>
+            <div className="hidden md:block md:ms-3">{renderNav('desktop')}</div>
 
             <div className="ms-auto flex w-full min-w-0 flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
               {user && <ConnectionStatusPill />}
@@ -215,9 +216,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}
             </div>
           </div>
-          {nav && (
+          {user && navItems.length > 0 && (
             <div className="mx-auto flex max-w-6xl overflow-x-auto px-4 pb-3 sm:px-6 md:hidden">
-              {nav}
+              {renderNav('mobile')}
             </div>
           )}
         </header>
