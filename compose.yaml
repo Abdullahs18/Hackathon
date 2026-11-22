@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: dastak
+      POSTGRES_DB: dastak
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dastak -d dastak"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    build: &backend_build
+      context: .
+      dockerfile: backend/Dockerfile
+    environment: &backend_environment
+      DASTAK_DATABASE_URL: postgresql+psycopg://dastak:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/dastak
+      DASTAK_JWT_SECRET: ${DASTAK_JWT_SECRET:?Set DASTAK_JWT_SECRET in .env}
+      DASTAK_DEMO_PASSWORD: ${DASTAK_DEMO_PASSWORD:?Set DASTAK_DEMO_PASSWORD in .env}
+      DASTAK_CORS_ORIGINS: ${DASTAK_CORS_ORIGINS:-["http://localhost:5173"]}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DASTAK_GEMINI_MODEL: ${DASTAK_GEMINI_MODEL:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+  api:
+    build: *backend_build
+    volumes:
+      - evidence_data:/srv/backend/storage/evidence
+    environment: *backend_environment
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  postgres_data:
+  evidence_data:

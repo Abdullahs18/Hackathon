@@ -1,0 +1,75 @@
+# Connect this Blueprint to integration/deploy-render for preview, then main after acceptance.
+services:
+  - type: web
+    name: dastak-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    dockerCommand: python -m app.deploy
+    autoDeployTrigger: checksPass
+    healthCheckPath: /api/v1/health/ready
+    maxShutdownDelaySeconds: 120
+    envVars:
+      - key: DASTAK_ENVIRONMENT
+        value: production
+      - key: DASTAK_STORAGE_BACKEND
+        value: supabase
+      - key: DASTAK_DATABASE_URL
+        sync: false
+      - key: DASTAK_CORS_ORIGINS
+        sync: false
+      - key: DASTAK_JWT_SECRET
+        generateValue: true
+      - key: DASTAK_DEMO_PASSWORD
+        sync: false
+      - key: DASTAK_SEED_DEMO
+        value: 'true'
+      - key: DASTAK_SUPABASE_URL
+        sync: false
+      - key: DASTAK_SUPABASE_SERVICE_KEY
+        sync: false
+      - key: DASTAK_SUPABASE_BUCKET
+        value: dastak-private
+      - key: DASTAK_DATABASE_POOL_SIZE
+        value: '3'
+      - key: DASTAK_DATABASE_MAX_OVERFLOW
+        value: '2'
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DASTAK_GEMINI_MODEL
+        sync: false
+  - type: web
+    name: dastak-web
+    runtime: static
+    rootDir: hackathon frontend
+    buildCommand: npm ci --no-audit --no-fund && npm run build
+    staticPublishPath: dist
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: VITE_USE_MOCK
+        value: 'false'
+      - key: VITE_DEPLOYMENT
+        value: production
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: dastak-api
+          envVarKey: RENDER_EXTERNAL_URL
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache

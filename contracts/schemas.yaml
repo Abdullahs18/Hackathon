@@ -1,46 +1,210 @@
-# Shared OpenAPI 3.0 schema components. References resolve relative to this file.
 components:
   schemas:
+    ConsentDataScope:
+      type: string
+      enum:
+      - case_status
+      - incident_data
+      - evidence
+      - incident_data.incident_type
+      - incident_data.incident_date
+      - incident_data.description
+      - incident_data.scam_message
+      - incident_data.platform
+      - incident_data.money_lost
+      - incident_data.amount
+      - incident_data.currency
+      - incident_data.payment_method
+      - incident_data.transaction_reference
+      - incident_data.suspect_details
+      - incident_data.citizen_confirmed_corrections
+      - identity_reference
+      - voice_audio
+      - voice_transcript
+      - spoken_text
+      description: case_status shares the case envelope. incident_data shares incident fields except evidence_ids;
+        evidence shares evidence IDs/access. Individual incident_data.field scopes narrow incident sharing.
+        These are data scopes, separate from API-key scopes.
+    ConsentPurpose:
+      type: string
+      enum:
+      - helper_assistance
+      - complaint_submission
+      - mock_identity_check
+      - mock_payment_lookup
+      - mock_requirements_lookup
+      - voice_processing
+      - speech_synthesis
+      - speech_translation
+      description: helper_assistance uses user:<helper_id>; complaint_submission uses workspace:<id>.
+        Mock purposes use service:mock-identity, service:mock-payment and service:mock-data respectively.
+        voice_processing uses service:gemini-voice; speech_synthesis uses service:gtts;
+        speech_translation uses service:gemini-speech with spoken_text scope.
+    HelperGrantCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - helper_id
+      properties:
+        helper_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+    OfficerAssignmentCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - officer_id
+      properties:
+        officer_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+    AdminAssignmentCase:
+      type: object
+      additionalProperties: false
+      required: [complaint_id, submission_reference, destination_workspace_id, current_status, review_outcome, submitted_at, assigned_officer_id, recipient_consent_active]
+      properties:
+        complaint_id:
+          type: string
+          format: uuid
+        submission_reference:
+          type: string
+          maxLength: 100
+        destination_workspace_id:
+          type: string
+          maxLength: 100
+        current_status:
+          type: string
+          enum: [SUBMITTED, OFFICER_REVIEW]
+        review_outcome:
+          $ref: '#/components/schemas/ReviewOutcome'
+        submitted_at:
+          type: string
+          format: date-time
+        assigned_officer_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        recipient_consent_active:
+          type: boolean
+    EligibleAssignmentOfficer:
+      type: object
+      additionalProperties: false
+      required: [user_id, workspace_id]
+      properties:
+        user_id:
+          type: string
+          maxLength: 100
+        workspace_id:
+          type: string
+          maxLength: 100
+    AdminAssignmentQueue:
+      type: object
+      additionalProperties: false
+      description: Administrative filing metadata only. No citizen identity, incident facts, draft, evidence, voice or tool payloads.
+      required: [items, officers, next_cursor]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/AdminAssignmentCase'
+        officers:
+          type: array
+          items:
+            $ref: '#/components/schemas/EligibleAssignmentOfficer'
+        next_cursor:
+          type: string
+          format: uuid
+          nullable: true
+    VoiceExtraction:
+      type: object
+      description: Unconfirmed extracted incident suggestions, a plain Urdu summary and uncertainties.
+        Used by the provider proof and persisted saved-case assessment. Validate and obtain citizen corrections
+        before applying suggestions; never grants consent or filing authority.
+      additionalProperties: false
+      required:
+      - incident_data
+      - spoken_summary_ur
+      - uncertainties
+      properties:
+        incident_data:
+          $ref: '#/components/schemas/IncidentInformation'
+        spoken_summary_ur:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        uncertainties:
+          type: array
+          items:
+            type: string
+    Health:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - simulated
+      properties:
+        status:
+          type: string
+          enum:
+          - ok
+        simulated:
+          type: boolean
+          enum:
+          - true
     Role:
       type: string
-      enum: [Citizen, Helper, Officer, Admin]
+      enum:
+      - Citizen
+      - Helper
+      - Officer
+      - Admin
     WorkflowStatus:
       type: string
       enum:
-        - DRAFT
-        - COLLECT_INFORMATION
-        - VOICE_TRANSCRIPTION
-        - STRUCTURED_EXTRACTION
-        - CLASSIFICATION
-        - VALIDATION
-        - NEEDS_INFORMATION
-        - HUMAN_REVIEW
-        - ROUTING_RULE_EVALUATION
-        - COMPLAINT_GENERATION
-        - CITIZEN_REVIEW
-        - CONSENT_AND_AUTHORIZATION
-        - AGENT_EXECUTION
-        - MOCK_SERVICE_CALLS
-        - SUBMISSION_VERIFICATION
-        - SUBMITTED
-        - OFFICER_REVIEW
-        - RESOLVED
+      - DRAFT
+      - COLLECT_INFORMATION
+      - VOICE_TRANSCRIPTION
+      - STRUCTURED_EXTRACTION
+      - CLASSIFICATION
+      - VALIDATION
+      - NEEDS_INFORMATION
+      - HUMAN_REVIEW
+      - ROUTING_RULE_EVALUATION
+      - COMPLAINT_GENERATION
+      - CITIZEN_REVIEW
+      - CONSENT_AND_AUTHORIZATION
+      - AGENT_EXECUTION
+      - MOCK_SERVICE_CALLS
+      - SUBMISSION_VERIFICATION
+      - SUBMITTED
+      - OFFICER_REVIEW
+      - RESOLVED
     ConsentStatus:
       type: string
-      enum: [granted, withdrawn]
+      enum:
+      - granted
+      - withdrawn
     OfficerAction:
       type: string
-      enum: [request_information, accept, reject, escalate, close]
+      enum:
+      - request_information
+      - accept
+      - reject
+      - escalate
+      - close
     ClassificationResult:
       type: object
       additionalProperties: false
       required:
-        - incident_type
-        - confidence
-        - suspicious_indicators
-        - explanation
-        - missing_fields
-        - contradiction_flags
+      - incident_type
+      - confidence
+      - suspicious_indicators
+      - explanation
+      - missing_fields
+      - contradiction_flags
       properties:
         incident_type:
           type: string
@@ -62,30 +226,23 @@ components:
           type: array
           items:
             type: string
-      x-pydantic-source: |
-        from pydantic import BaseModel, Field
-
-        class ClassificationResult(BaseModel):
-            incident_type: str
-            confidence: float = Field(ge=0, le=1)
-            suspicious_indicators: list[str]
-            explanation: str
-            missing_fields: list[str]
-            contradiction_flags: list[str]
+      x-pydantic-source: "from pydantic import BaseModel, Field\n\nclass ClassificationResult(BaseModel):\n\
+        \    incident_type: str\n    confidence: float = Field(ge=0, le=1)\n    suspicious_indicators:\
+        \ list[str]\n    explanation: str\n    missing_fields: list[str]\n    contradiction_flags: list[str]\n"
     ComplaintDraft:
       type: object
       additionalProperties: false
       required:
-        - incident_type
-        - incident_date
-        - description
-        - amount
-        - currency
-        - payment_method
-        - transaction_reference
-        - suspect_details
-        - evidence_ids
-        - citizen_confirmed
+      - incident_type
+      - incident_date
+      - description
+      - amount
+      - currency
+      - payment_method
+      - transaction_reference
+      - suspect_details
+      - evidence_ids
+      - citizen_confirmed
       properties:
         incident_type:
           type: string
@@ -117,40 +274,36 @@ components:
             type: string
         citizen_confirmed:
           type: boolean
-      x-pydantic-source: |
-        from pydantic import BaseModel
-
-        class ComplaintDraft(BaseModel):
-            incident_type: str
-            incident_date: str | None
-            description: str
-            amount: float | None
-            currency: str | None
-            payment_method: str | None
-            transaction_reference: str | None
-            suspect_details: list[str]
-            evidence_ids: list[str]
-            citizen_confirmed: bool
+      x-pydantic-source: "from pydantic import BaseModel\n\nclass ComplaintDraft(BaseModel):\n    incident_type:\
+        \ str\n    incident_date: str | None\n    description: str\n    amount: float | None\n    currency:\
+        \ str | None\n    payment_method: str | None\n    transaction_reference: str | None\n    suspect_details:\
+        \ list[str]\n    evidence_ids: list[str]\n    citizen_confirmed: bool\n"
     IncidentInformation:
       type: object
-      description: Partial incident record. Omit uncollected fields. Use null for unknown values. An approximate date may be supplied as text.
+      description: Partial incident record. Omit uncollected fields. Use null for unknown values. An approximate
+        date may be supplied as text.
       additionalProperties: false
       properties:
         incident_type:
           type: string
+          maxLength: 200
           nullable: true
         incident_date:
           type: string
+          maxLength: 12000
           description: Exact or approximate date as supplied.
           nullable: true
         description:
           type: string
+          maxLength: 12000
           nullable: true
         scam_message:
           type: string
+          maxLength: 12000
           nullable: true
         platform:
           type: string
+          maxLength: 12000
           nullable: true
         money_lost:
           type: boolean
@@ -160,26 +313,32 @@ components:
           nullable: true
         currency:
           type: string
+          maxLength: 12000
           nullable: true
         payment_method:
           type: string
+          maxLength: 12000
           nullable: true
         transaction_reference:
           type: string
+          maxLength: 12000
           nullable: true
         suspect_details:
           type: array
+          maxItems: 100
           items:
             type: string
-          description: 'Reported phone numbers, URLs, accounts or profiles.'
+          description: Reported phone numbers, URLs, accounts or profiles.
           nullable: true
         evidence_ids:
           type: array
+          maxItems: 100
           items:
             type: string
           nullable: true
         citizen_confirmed_corrections:
           type: array
+          maxItems: 100
           items:
             type: string
           nullable: true
@@ -190,19 +349,24 @@ components:
       properties:
         incident_type:
           type: string
+          maxLength: 200
           nullable: true
         incident_date:
           type: string
+          maxLength: 12000
           description: Exact or approximate date as supplied.
           nullable: true
         description:
           type: string
+          maxLength: 12000
           nullable: true
         scam_message:
           type: string
+          maxLength: 12000
           nullable: true
         platform:
           type: string
+          maxLength: 12000
           nullable: true
         money_lost:
           type: boolean
@@ -212,21 +376,26 @@ components:
           nullable: true
         currency:
           type: string
+          maxLength: 12000
           nullable: true
         payment_method:
           type: string
+          maxLength: 12000
           nullable: true
         transaction_reference:
           type: string
+          maxLength: 12000
           nullable: true
         suspect_details:
           type: array
+          maxItems: 100
           items:
             type: string
-          description: 'Reported phone numbers, URLs, accounts or profiles.'
+          description: Reported phone numbers, URLs, accounts or profiles.
           nullable: true
         evidence_ids:
           type: array
+          maxItems: 100
           items:
             type: string
           nullable: true
@@ -234,7 +403,10 @@ components:
     users:
       type: object
       additionalProperties: false
-      required: [user_id, role, workspace_id]
+      required:
+      - user_id
+      - role
+      - workspace_id
       properties:
         user_id:
           type: string
@@ -248,7 +420,9 @@ components:
     workspaces:
       type: object
       additionalProperties: false
-      required: [workspace_id, name]
+      required:
+      - workspace_id
+      - name
       properties:
         workspace_id:
           type: string
@@ -257,16 +431,28 @@ components:
           type: string
     complaints:
       type: object
-      description: citizen_id references users.user_id. Routing sets destination_workspace_id and pins the immutable rule_version_id. Both are null before a route is selected.
+      description: citizen_id references users.user_id. Routing sets destination_workspace_id and pins
+        the immutable rule_version_id. Both are null before a route is selected.
       additionalProperties: false
       required:
-        - complaint_id
-        - citizen_id
-        - destination_workspace_id
-        - rule_version_id
-        - current_status
-        - incident_data
+      - complaint_id
+      - citizen_id
+      - destination_workspace_id
+      - rule_version_id
+      - current_status
+      - incident_data
       properties:
+        version:
+          type: integer
+          minimum: 1
+          description: Saved complaint revision for incident changes and analysis/status updates; returned
+            as a quoted ETag.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
         complaint_id:
           type: string
           minLength: 1
@@ -286,15 +472,30 @@ components:
         incident_type:
           type: string
           nullable: true
-          description: Duplicates incident_data.incident_type so routing queries can filter a plain column without querying the JSON record.
+          description: Duplicates incident_data.incident_type so routing queries can filter a plain column
+            without querying the JSON record.
         incident_data:
           $ref: '#/components/schemas/IncidentInformation'
         complaint_draft:
           $ref: '#/components/schemas/ComplaintDraft'
+        authorization_id:
+          type: string
+          nullable: true
+        agent_run_id:
+          type: string
+          nullable: true
+        submission_reference:
+          type: string
+          nullable: true
+        review_outcome:
+          $ref: '#/components/schemas/ReviewOutcome'
     complaint_access_grants:
       type: object
       additionalProperties: false
-      required: [complaint_id, helper_id, active]
+      required:
+      - complaint_id
+      - helper_id
+      - active
       properties:
         complaint_id:
           type: string
@@ -308,7 +509,10 @@ components:
       type: object
       description: The assigned officer and case must belong to this workspace.
       additionalProperties: false
-      required: [complaint_id, officer_id, workspace_id]
+      required:
+      - complaint_id
+      - officer_id
+      - workspace_id
       properties:
         complaint_id:
           type: string
@@ -321,17 +525,19 @@ components:
           minLength: 1
     evidence:
       type: object
+      description: Citizen-submitted original; not authenticity-verified. This metadata never contains
+        a public URL or private storage path.
       additionalProperties: false
       required:
-        - evidence_id
-        - complaint_id
-        - uploader_id
-        - timestamp
-        - file_name
-        - file_type
-        - file_size
-        - sha256
-        - verification_status
+      - evidence_id
+      - complaint_id
+      - uploader_id
+      - timestamp
+      - file_name
+      - file_type
+      - file_size
+      - sha256
+      - verification_status
       properties:
         evidence_id:
           type: string
@@ -347,32 +553,45 @@ components:
           format: date-time
         file_name:
           type: string
+          maxLength: 200
         file_type:
           type: string
+          enum:
+          - image/png
+          - image/jpeg
+          - image/webp
+          - application/pdf
         file_size:
           type: integer
-          minimum: 0
+          minimum: 1
+          maximum: 10485760
           description: Bytes.
         sha256:
           type: string
-          pattern: '^[a-fA-F0-9]{64}$'
+          pattern: ^[a-fA-F0-9]{64}$
         verification_status:
           type: string
-          enum: [not_authenticity_verified]
+          enum:
+          - not_authenticity_verified
     ConsentGrant:
       type: object
       additionalProperties: false
-      required: [recipient, purpose, data_scopes]
+      required:
+      - recipient
+      - purpose
+      - data_scopes
       properties:
         recipient:
           type: string
           minLength: 1
+          maxLength: 150
+          description: user:<helper_user_id> for helper_assistance; workspace:<workspace_id> for complaint_submission.
         purpose:
-          type: string
+          $ref: '#/components/schemas/ConsentPurpose'
         data_scopes:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/ConsentDataScope'
           minItems: 1
           uniqueItems: true
     ConsentChange:
@@ -382,12 +601,14 @@ components:
         recipient:
           type: string
           minLength: 1
+          maxLength: 150
+          description: user:<helper_user_id> for helper_assistance; workspace:<workspace_id> for complaint_submission.
         purpose:
-          type: string
+          $ref: '#/components/schemas/ConsentPurpose'
         data_scopes:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/ConsentDataScope'
           minItems: 1
           uniqueItems: true
       minProperties: 1
@@ -395,16 +616,16 @@ components:
       type: object
       additionalProperties: false
       required:
-        - consent_id
-        - complaint_id
-        - citizen_id
-        - recipient
-        - purpose
-        - data_scopes
-        - status
-        - granted_at
-        - changed_at
-        - withdrawn_at
+      - consent_id
+      - complaint_id
+      - citizen_id
+      - recipient
+      - purpose
+      - data_scopes
+      - status
+      - granted_at
+      - changed_at
+      - withdrawn_at
       properties:
         consent_id:
           type: string
@@ -418,12 +639,14 @@ components:
         recipient:
           type: string
           minLength: 1
+          maxLength: 150
+          description: user:<helper_user_id> for helper_assistance; workspace:<workspace_id> for complaint_submission.
         purpose:
-          type: string
+          $ref: '#/components/schemas/ConsentPurpose'
         data_scopes:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/ConsentDataScope'
           minItems: 1
           uniqueItems: true
         status:
@@ -443,65 +666,106 @@ components:
       type: object
       additionalProperties: false
       required:
-        - name
-        - incident_type
-        - destination_workspace_id
-        - priority
-        - active
-        - explanation
-        - justification
+      - name
+      - incident_type
+      - destination_workspace_id
+      - priority
+      - active
+      - explanation
+      - justification
       properties:
         name:
           type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
         incident_type:
           type: string
+          enum: &id001
+          - fake aid scam
+          - phishing
+          - impersonation
+          - fraudulent transfer
+          - other suspected online financial fraud
+          description: Supported subtype within the one suspected-online-financial-fraud workflow. Exact
+            classifier-label match.
         destination_workspace_id:
           type: string
           minLength: 1
+          enum:
+          - mock-financial-fraud
+          - mock-digital-safety
         priority:
           type: integer
+          minimum: 0
+          maximum: 1000
+          description: Lower number evaluates first; ties use ascending rule_id.
         active:
           type: boolean
         explanation:
           type: string
+          minLength: 1
+          maxLength: 4000
+          pattern: \S
         justification:
           type: string
+          minLength: 1
+          maxLength: 4000
+          pattern: \S
     RuleChange:
       type: object
       additionalProperties: false
       properties:
         name:
           type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
         incident_type:
           type: string
+          enum: *id001
+          description: Supported subtype within the one suspected-online-financial-fraud workflow. Exact
+            classifier-label match.
         destination_workspace_id:
           type: string
           minLength: 1
+          enum:
+          - mock-financial-fraud
+          - mock-digital-safety
         priority:
           type: integer
+          minimum: 0
+          maximum: 1000
+          description: Lower number evaluates first; ties use ascending rule_id.
         active:
           type: boolean
         explanation:
           type: string
+          minLength: 1
+          maxLength: 4000
+          pattern: \S
         justification:
           type: string
+          minLength: 1
+          maxLength: 4000
+          pattern: \S
       minProperties: 1
     routing_rule_versions:
       type: object
       description: Immutable snapshot. created_by references the Admin user.
       additionalProperties: false
       required:
-        - rule_id
-        - rule_version_id
-        - name
-        - incident_type
-        - destination_workspace_id
-        - priority
-        - active
-        - explanation
-        - justification
-        - created_by
-        - timestamp
+      - rule_id
+      - rule_version_id
+      - name
+      - incident_type
+      - destination_workspace_id
+      - priority
+      - active
+      - explanation
+      - justification
+      - created_by
+      - timestamp
       properties:
         rule_id:
           type: string
@@ -535,17 +799,17 @@ components:
       description: Current definition and its active version identifier. Edits create immutable snapshots.
       additionalProperties: false
       required:
-        - rule_id
-        - rule_version_id
-        - name
-        - incident_type
-        - destination_workspace_id
-        - priority
-        - active
-        - explanation
-        - justification
-        - created_by
-        - timestamp
+      - rule_id
+      - rule_version_id
+      - name
+      - incident_type
+      - destination_workspace_id
+      - priority
+      - active
+      - explanation
+      - justification
+      - created_by
+      - timestamp
       properties:
         rule_id:
           type: string
@@ -578,24 +842,24 @@ components:
       type: object
       additionalProperties: false
       required:
-        - agent_run_id
-        - complaint_id
-        - citizen_id
-        - language
-        - transcript
-        - incident_data
-        - classification
-        - readiness_score
-        - missing_fields
-        - contradiction_flags
-        - rule_version_id
-        - destination_workspace_id
-        - consent_granted
-        - citizen_authorized
-        - idempotency_key
-        - submission_reference
-        - current_status
-        - errors
+      - agent_run_id
+      - complaint_id
+      - citizen_id
+      - language
+      - transcript
+      - incident_data
+      - classification
+      - readiness_score
+      - missing_fields
+      - contradiction_flags
+      - rule_version_id
+      - destination_workspace_id
+      - consent_granted
+      - citizen_authorized
+      - idempotency_key
+      - submission_reference
+      - current_status
+      - errors
       properties:
         agent_run_id:
           type: string
@@ -615,11 +879,11 @@ components:
           $ref: '#/components/schemas/IncidentInformation'
         classification:
           oneOf:
-            - $ref: '#/components/schemas/ClassificationResult'
-            - type: object
-              nullable: true
-              enum:
-                - null
+          - $ref: '#/components/schemas/ClassificationResult'
+          - type: object
+            nullable: true
+            enum:
+            - null
         readiness_score:
           type: number
           minimum: 0
@@ -657,11 +921,31 @@ components:
           type: array
           items:
             type: string
+        authorization_id:
+          type: string
+        next_step:
+          type: string
+        warnings:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     agent_actions:
       type: object
       description: Sanitized summaries of individual agent actions and tool calls.
       additionalProperties: false
-      required: [agent_action_id, agent_run_id, action, input, result, timestamp]
+      required:
+      - agent_action_id
+      - agent_run_id
+      - action
+      - input
+      - result
+      - timestamp
       properties:
         agent_action_id:
           type: string
@@ -682,7 +966,13 @@ components:
     submissions:
       type: object
       additionalProperties: false
-      required: [submission_id, complaint_id, idempotency_key, submission_reference, result, timestamp]
+      required:
+      - submission_id
+      - complaint_id
+      - idempotency_key
+      - submission_reference
+      - result
+      - timestamp
       properties:
         submission_id:
           type: string
@@ -706,7 +996,11 @@ components:
       type: object
       description: Confirmed simulated submission.
       additionalProperties: false
-      required: [complaint_id, idempotency_key, submission_reference]
+      required:
+      - complaint_id
+      - idempotency_key
+      - submission_reference
+      - simulated
       properties:
         complaint_id:
           type: string
@@ -717,10 +1011,16 @@ components:
         submission_reference:
           type: string
           minLength: 1
+        simulated:
+          type: boolean
+          enum:
+          - true
     SubmissionRequest:
       type: object
       additionalProperties: false
-      required: [complaint_id, complaint_draft]
+      required:
+      - complaint_id
+      - complaint_draft
       properties:
         complaint_id:
           type: string
@@ -729,18 +1029,20 @@ components:
           $ref: '#/components/schemas/ComplaintDraft'
     audit_logs:
       type: object
-      description: Append-only summary. Access to trace details follows the underlying data permissions.
+      description: Admin-safe metadata projection, never the raw stored audit input/result. Input contains
+        validated metadata only; result is a fixed explanation. Unknown actions and private fields are
+        redacted.
       additionalProperties: false
       required:
-        - audit_log_id
-        - complaint_id
-        - user_id
-        - agent_run_id
-        - action
-        - input
-        - result
-        - rule_version_id
-        - timestamp
+      - audit_log_id
+      - complaint_id
+      - user_id
+      - agent_run_id
+      - action
+      - input
+      - result
+      - rule_version_id
+      - timestamp
       properties:
         audit_log_id:
           type: string
@@ -772,10 +1074,20 @@ components:
         timestamp:
           type: string
           format: date-time
+        redacted:
+          type: boolean
+          enum:
+          - true
     notifications:
       type: object
       additionalProperties: false
-      required: [notification_id, user_id, complaint_id, message, read, timestamp]
+      required:
+      - notification_id
+      - user_id
+      - complaint_id
+      - message
+      - read
+      - timestamp
       properties:
         notification_id:
           type: string
@@ -796,22 +1108,27 @@ components:
     ApiKeyScope:
       type: string
       enum:
-        - 'complaints:read'
-        - 'complaints:write'
-        - 'consents:read'
-        - 'consents:write'
-        - 'helper:access'
-        - 'officer:access'
-        - 'admin:users'
-        - 'admin:rules'
-        - 'admin:audit'
-        - 'admin:api_keys'
-        - 'mock:services'
-        - 'notifications:read'
+      - complaints:read
+      - complaints:write
+      - consents:read
+      - consents:write
+      - helper:access
+      - officer:access
+      - admin:users
+      - admin:cases
+      - admin:rules
+      - admin:audit
+      - admin:api_keys
+      - mock:services
+      - notifications:read
     ApiKeyMetadata:
       type: object
       additionalProperties: false
-      required: [api_key_id, scopes, expires_at, revoked]
+      required:
+      - api_key_id
+      - scopes
+      - expires_at
+      - revoked
       properties:
         api_key_id:
           type: string
@@ -827,11 +1144,23 @@ components:
           format: date-time
         revoked:
           type: boolean
+        created_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
     api_keys:
       type: object
       description: Persistence only. List and revoke operations return metadata.
       additionalProperties: false
-      required: [api_key_id, scopes, expires_at, revoked, key_hash]
+      required:
+      - api_key_id
+      - scopes
+      - expires_at
+      - revoked
+      - key_hash
       properties:
         api_key_id:
           type: string
@@ -852,7 +1181,9 @@ components:
     ApiKeyCreate:
       type: object
       additionalProperties: false
-      required: [scopes, expires_at]
+      required:
+      - scopes
+      - expires_at
       properties:
         scopes:
           type: array
@@ -863,10 +1194,19 @@ components:
         expires_at:
           type: string
           format: date-time
+      description: JWT-authenticated self-issuance only. Keys bind to the issuing account; there is no
+        target-principal selector. Requested scopes must fit its role. Timezone-aware expiry must be in
+        the future and at most 90 days away. A command key prevents duplicate issuance; the secret is
+        returned only once.
     ApiKeyIssued:
       type: object
       additionalProperties: false
-      required: [api_key_id, scopes, expires_at, revoked, api_key]
+      required:
+      - api_key_id
+      - scopes
+      - expires_at
+      - revoked
+      - api_key
       properties:
         api_key_id:
           type: string
@@ -884,10 +1224,20 @@ components:
           type: boolean
         api_key:
           type: string
+        created_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
     mock_identity_records:
       type: object
       additionalProperties: false
-      required: [identity_reference, user_id]
+      required:
+      - identity_reference
+      - user_id
+      - simulated
       properties:
         identity_reference:
           type: string
@@ -895,10 +1245,19 @@ components:
         user_id:
           type: string
           minLength: 1
+        simulated:
+          type: boolean
+          enum:
+          - true
     mock_payment_transactions:
       type: object
       additionalProperties: false
-      required: [transaction_reference, amount, currency, payment_method]
+      required:
+      - transaction_reference
+      - amount
+      - currency
+      - payment_method
+      - simulated
       properties:
         transaction_reference:
           type: string
@@ -910,10 +1269,18 @@ components:
         payment_method:
           type: string
           nullable: true
+        simulated:
+          type: boolean
+          enum:
+          - true
     mock_reporting_requirements:
       type: object
       additionalProperties: false
-      required: [incident_type, requirements, available_fields]
+      required:
+      - incident_type
+      - requirements
+      - available_fields
+      - simulated
       properties:
         incident_type:
           type: string
@@ -925,35 +1292,53 @@ components:
           type: array
           items:
             type: string
+        simulated:
+          type: boolean
+          enum:
+          - true
+      description: Simulated field-name requirements, not official reporting guidance. Values must be
+        allowlisted IncidentInformation field names; no executable instructions.
     Login:
       type: object
       additionalProperties: false
-      required: [user_id, password]
+      required:
+      - user_id
+      - password
       properties:
         user_id:
           type: string
           minLength: 1
+          maxLength: 100
         password:
           type: string
+          maxLength: 1024
           format: password
           writeOnly: true
     LoginResult:
       type: object
       additionalProperties: false
-      required: [access_token]
+      required:
+      - access_token
       properties:
         access_token:
           type: string
     UserCreate:
       type: object
       additionalProperties: false
-      required: [user_id, password, role, workspace_id]
+      required:
+      - user_id
+      - password
+      - role
+      - workspace_id
       properties:
         user_id:
           type: string
           minLength: 1
+          maxLength: 100
         password:
           type: string
+          minLength: 12
+          maxLength: 1024
           format: password
           writeOnly: true
         role:
@@ -965,26 +1350,45 @@ components:
     OfficerDecision:
       type: object
       additionalProperties: false
-      required: [action, reason]
+      required:
+      - action
+      - reason
       properties:
         action:
           $ref: '#/components/schemas/OfficerAction'
         reason:
           type: string
           minLength: 1
+          maxLength: 4000
     AuthorizeSubmission:
       type: object
       additionalProperties: false
-      required: [citizen_authorized]
+      required:
+      - citizen_authorized
+      - citizen_confirmed
+      - reviewed_version
       properties:
         citizen_authorized:
           type: boolean
           enum:
-            - true
+          - true
+        citizen_confirmed:
+          type: boolean
+          enum:
+          - true
+        reviewed_version:
+          type: integer
+          minimum: 1
+      description: Owning Citizen explicitly confirms and authorizes the exact reviewed revision. Separate
+        from consent grants. A changed review, route, authorization or relevant consent requires renewed
+        review/authorization.
     Analysis:
       type: object
       additionalProperties: false
-      required: [classification, readiness_score, current_status]
+      required:
+      - classification
+      - readiness_score
+      - current_status
       properties:
         classification:
           $ref: '#/components/schemas/ClassificationResult'
@@ -995,10 +1399,61 @@ components:
           nullable: true
         current_status:
           $ref: '#/components/schemas/WorkflowStatus'
+        analysis_id:
+          type: string
+          minLength: 1
+        input_version:
+          type: integer
+          minimum: 1
+        complaint_version:
+          type: integer
+          minimum: 1
+        analyzed_at:
+          type: string
+          format: date-time
+        model:
+          type: string
+          minLength: 1
+        extraction:
+          $ref: '#/components/schemas/VoiceExtraction'
+        follow_up_questions_ur:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+        handoff_reasons:
+          type: array
+          items:
+            type: string
+        requires_citizen_review:
+          type: boolean
+          enum:
+          - true
+        submitted:
+          type: boolean
+          enum:
+          - false
+        routing:
+          $ref: '#/components/schemas/RouteDecision'
+        routing_generation:
+          type: integer
+          minimum: 1
+        policy_version:
+          type: string
+          enum:
+          - routing-v1
+        complaint_draft:
+          $ref: '#/components/schemas/ComplaintDraft'
+      description: Persisted owner-only assessment for an exact saved revision. Deterministic routing
+        pins an immutable rule version. Readiness and review drafts never grant consent or authorize submission.
     EvidenceUpload:
       type: object
+      description: Exactly one file field. Original PNG, JPEG, WebP or static unencrypted PDF, at most
+        10 MiB. Filenames, declared MIME, decoded content and resource limits are checked. No OCR or authenticity
+        claim.
       additionalProperties: false
-      required: [file]
+      required:
+      - file
       properties:
         file:
           type: string
@@ -1006,7 +1461,9 @@ components:
     Error:
       type: object
       additionalProperties: false
-      required: [error, detail]
+      required:
+      - error
+      - detail
       properties:
         error:
           type: string
@@ -1014,24 +1471,30 @@ components:
           type: string
     IncidentPatch:
       type: object
-      description: Partial incident record. Omit uncollected fields. Use null for unknown values. An approximate date may be supplied as text.
+      description: Partial incident record. Omit uncollected fields. Use null for unknown values. An approximate
+        date may be supplied as text.
       additionalProperties: false
       properties:
         incident_type:
           type: string
+          maxLength: 200
           nullable: true
         incident_date:
           type: string
+          maxLength: 12000
           description: Exact or approximate date as supplied.
           nullable: true
         description:
           type: string
+          maxLength: 12000
           nullable: true
         scam_message:
           type: string
+          maxLength: 12000
           nullable: true
         platform:
           type: string
+          maxLength: 12000
           nullable: true
         money_lost:
           type: boolean
@@ -1041,27 +1504,773 @@ components:
           nullable: true
         currency:
           type: string
+          maxLength: 12000
           nullable: true
         payment_method:
           type: string
+          maxLength: 12000
           nullable: true
         transaction_reference:
           type: string
+          maxLength: 12000
           nullable: true
         suspect_details:
           type: array
+          maxItems: 100
           items:
             type: string
-          description: 'Reported phone numbers, URLs, accounts or profiles.'
+          description: Reported phone numbers, URLs, accounts or profiles.
           nullable: true
         evidence_ids:
           type: array
+          maxItems: 100
           items:
             type: string
           nullable: true
         citizen_confirmed_corrections:
           type: array
+          maxItems: 100
           items:
             type: string
           nullable: true
       minProperties: 1
+    AnalysisRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - allow_external_processing
+      properties:
+        allow_external_processing:
+          type: boolean
+          enum:
+          - true
+          description: Explicit permission for this saved case version to be sent to Gemini. No evidence
+            bytes, credentials or identity records are sent. This is not submission authorization.
+    CaseAssessment:
+      type: object
+      additionalProperties: false
+      required:
+      - extraction
+      - classification
+      properties:
+        extraction:
+          $ref: '#/components/schemas/VoiceExtraction'
+        classification:
+          $ref: '#/components/schemas/ClassificationResult'
+      description: Validated provider assessment of untrusted saved incident data. Extraction is an unconfirmed
+        suggestion; never overwrites saved citizen facts or authorizes filing.
+    RouteDecision:
+      type: object
+      nullable: true
+      additionalProperties: false
+      required:
+      - rule_id
+      - rule_version_id
+      - destination_workspace_id
+      - incident_type
+      - explanation
+      - justification
+      properties:
+        rule_id:
+          type: string
+          minLength: 1
+        rule_version_id:
+          type: string
+          minLength: 1
+        destination_workspace_id:
+          type: string
+          minLength: 1
+        incident_type:
+          type: string
+        explanation:
+          type: string
+        justification:
+          type: string
+      description: Immutable demo rule used for this assessment, or null when no valid route can be used.
+        No real government filing or authority endorsement.
+    ExecuteSubmission:
+      type: object
+      additionalProperties: false
+      required:
+      - authorization_id
+      properties:
+        authorization_id:
+          type: string
+          minLength: 1
+          maxLength: 36
+    SubmissionExecution:
+      type: object
+      additionalProperties: false
+      required:
+      - simulated
+      - submitted
+      - agent_run_id
+      - current_status
+      - submission_reference
+      - warnings
+      - errors
+      properties:
+        simulated:
+          type: boolean
+          enum:
+          - true
+        submitted:
+          type: boolean
+        agent_run_id:
+          type: string
+        current_status:
+          $ref: '#/components/schemas/WorkflowStatus'
+        submission_reference:
+          type: string
+          nullable: true
+        warnings:
+          type: array
+          items:
+            type: string
+        errors:
+          type: array
+          items:
+            type: string
+    AuthorizationView:
+      type: object
+      additionalProperties: false
+      required:
+      - authorization_id
+      - complaint_id
+      - reviewed_version
+      - case_version
+      - active
+      - authorized_at
+      - revoked_at
+      properties:
+        authorization_id:
+          type: string
+        complaint_id:
+          type: string
+        reviewed_version:
+          type: integer
+          minimum: 1
+        case_version:
+          type: integer
+          minimum: 1
+        active:
+          type: boolean
+        authorized_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+    ReviewOutcome:
+      type: string
+      enum:
+      - pending
+      - information_requested
+      - information_received
+      - accepted
+      - rejected
+      - escalated
+      - closed
+    ReviewReply:
+      type: object
+      additionalProperties: false
+      required:
+      - message
+      - allow_recipient_sharing
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        allow_recipient_sharing:
+          type: boolean
+          enum:
+          - true
+    ReviewEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - event_id
+      - complaint_id
+      - actor_id
+      - action
+      - message
+      - previous_outcome
+      - outcome
+      - complaint_version
+      - timestamp
+      properties:
+        event_id:
+          type: string
+        complaint_id:
+          type: string
+        actor_id:
+          type: string
+        action:
+          type: string
+          enum:
+          - request_information
+          - accept
+          - reject
+          - escalate
+          - close
+          - provide_information
+        message:
+          type: string
+          maxLength: 4000
+        previous_outcome:
+          $ref: '#/components/schemas/ReviewOutcome'
+        outcome:
+          $ref: '#/components/schemas/ReviewOutcome'
+        complaint_version:
+          type: integer
+          minimum: 1
+        timestamp:
+          type: string
+          format: date-time
+    AgentToolSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - call_id
+      - tool
+      - result_status
+      - timestamp
+      properties:
+        call_id:
+          type: string
+        tool:
+          type: string
+          enum:
+          - identity
+          - payment
+          - requirements
+          - submit
+          - verify
+          - unknown
+        result_status:
+          type: string
+          enum: &id002
+          - DRAFT
+          - COLLECT_INFORMATION
+          - VOICE_TRANSCRIPTION
+          - STRUCTURED_EXTRACTION
+          - CLASSIFICATION
+          - VALIDATION
+          - NEEDS_INFORMATION
+          - HUMAN_REVIEW
+          - ROUTING_RULE_EVALUATION
+          - COMPLAINT_GENERATION
+          - CITIZEN_REVIEW
+          - CONSENT_AND_AUTHORIZATION
+          - AGENT_EXECUTION
+          - MOCK_SERVICE_CALLS
+          - SUBMISSION_VERIFICATION
+          - SUBMITTED
+          - OFFICER_REVIEW
+          - RESOLVED
+          - UNKNOWN
+        timestamp:
+          type: string
+          format: date-time
+    AgentRunSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - agent_run_id
+      - complaint_id
+      - rule_version_id
+      - destination_workspace_id
+      - current_status
+      - next_step
+      - submitted
+      - tools
+      - created_at
+      - updated_at
+      - redacted
+      - outcomes
+      properties:
+        agent_run_id:
+          type: string
+        complaint_id:
+          type: string
+        rule_version_id:
+          type: string
+          nullable: true
+        destination_workspace_id:
+          type: string
+          nullable: true
+        current_status:
+          type: string
+          enum: *id002
+        next_step:
+          type: string
+          enum:
+          - identity
+          - payment
+          - requirements
+          - submit
+          - verify
+          - done
+          - blocked
+          - unknown
+        submitted:
+          type: boolean
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentToolSummary'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        redacted:
+          type: boolean
+          enum:
+          - true
+        outcomes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentOutcomeSummary'
+          description: Allowlisted server outcome codes with fixed explanations. Unrecognized private
+            errors/warnings are represented only as unknown_failure or unknown_warning.
+    AgentOutcomeSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - explanation
+      properties:
+        code:
+          type: string
+          enum:
+          - identity_fixture_not_found
+          - payment_fixture_scope_conflict
+          - payment_details_conflict
+          - requirements_unavailable
+          - reporting_information_missing
+          - possible_duplicate
+          - payment_not_found
+          - unknown_failure
+          - unknown_warning
+        explanation:
+          type: string
+    VoiceInput:
+      type: object
+      additionalProperties: false
+      required:
+      - voice_turn_id
+      - complaint_id
+      - input_version
+      - status
+      - next_step
+      - transcript
+      - confirmed_transcript
+      - extraction
+      - model
+      - error_code
+      - applied_version
+      - requires_citizen_review
+      - submitted
+      - created_at
+      - updated_at
+      properties:
+        voice_turn_id:
+          type: string
+        complaint_id:
+          type: string
+        input_version:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum:
+          - PROCESSING
+          - READY
+          - FAILED
+          - STALE
+          - APPLIED
+        next_step:
+          type: string
+          enum:
+          - transcribe
+          - extract
+          - done
+        transcript:
+          type: string
+          nullable: true
+          maxLength: 12000
+        confirmed_transcript:
+          type: string
+          nullable: true
+          maxLength: 12000
+        extraction:
+          type: object
+          nullable: true
+          description: Validated VoiceExtraction proposal. Unknown values remain unknown. Readiness and
+            citizen filing authority are not inferred.
+          additionalProperties: false
+          required:
+          - incident_data
+          - spoken_summary_ur
+          - uncertainties
+          properties:
+            incident_data:
+              $ref: '#/components/schemas/IncidentInformation'
+            spoken_summary_ur:
+              type: string
+              minLength: 1
+              maxLength: 2000
+            uncertainties:
+              type: array
+              items:
+                type: string
+        model:
+          type: string
+          nullable: true
+        error_code:
+          type: string
+          nullable: true
+        applied_version:
+          type: integer
+          minimum: 1
+          nullable: true
+        requires_citizen_review:
+          type: boolean
+          enum:
+          - true
+        submitted:
+          type: boolean
+          enum:
+          - false
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    VoiceIncidentPatch:
+      type: object
+      description: Partial incident record. Omit uncollected fields. Use null for unknown values. An approximate
+        date may be supplied as text.
+      additionalProperties: false
+      properties:
+        incident_type:
+          type: string
+          maxLength: 200
+          nullable: true
+        incident_date:
+          type: string
+          maxLength: 12000
+          description: Exact or approximate date as supplied.
+          nullable: true
+        description:
+          type: string
+          maxLength: 12000
+          nullable: true
+        scam_message:
+          type: string
+          maxLength: 12000
+          nullable: true
+        platform:
+          type: string
+          maxLength: 12000
+          nullable: true
+        money_lost:
+          type: boolean
+          nullable: true
+        amount:
+          type: number
+          nullable: true
+        currency:
+          type: string
+          maxLength: 12000
+          nullable: true
+        payment_method:
+          type: string
+          maxLength: 12000
+          nullable: true
+        transaction_reference:
+          type: string
+          maxLength: 12000
+          nullable: true
+        suspect_details:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+          description: Reported phone numbers, URLs, accounts or profiles.
+          nullable: true
+      minProperties: 1
+    VoiceConfirmation:
+      type: object
+      additionalProperties: false
+      required:
+      - citizen_confirmed
+      - incident_patch
+      properties:
+        citizen_confirmed:
+          type: boolean
+          enum:
+          - true
+        incident_patch:
+          $ref: '#/components/schemas/VoiceIncidentPatch'
+        transcript_correction:
+          type: string
+          minLength: 1
+          maxLength: 12000
+        correction_note:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    SpeechRequest:
+      type: object
+      description: Speak current saved text. Mixed-language sources require scoped Gemini Urdu-translation
+        consent in addition to gTTS speech consent. Original saved complaint facts remain unchanged.
+      additionalProperties: false
+      required:
+      - kind
+      - allow_external_processing
+      properties:
+        kind:
+          type: string
+          enum:
+          - voice_summary
+          - follow_up
+          - review
+        allow_external_processing:
+          type: boolean
+          enum:
+          - true
+        voice_turn_id:
+          type: string
+          format: uuid
+        question_index:
+          type: integer
+          minimum: 0
+          maximum: 4
+    SpeechOutput:
+      type: object
+      additionalProperties: false
+      required:
+      - speech_id
+      - complaint_id
+      - case_version
+      - kind
+      - text_ur
+      - audio_path
+      - simulated
+      - submitted
+      properties:
+        speech_id:
+          type: string
+        complaint_id:
+          type: string
+        case_version:
+          type: integer
+          minimum: 1
+        kind:
+          type: string
+          enum:
+          - voice_summary
+          - follow_up
+          - review
+        text_ur:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        audio_path:
+          type: string
+        simulated:
+          type: boolean
+          enum:
+          - true
+        submitted:
+          type: boolean
+          enum:
+          - false
+
+    ReviewHelpCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - helper_id
+      - allow_sharing
+      properties:
+        helper_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        allow_sharing:
+          type: boolean
+          enum:
+          - true
+    ReviewHelpAction:
+      type: object
+      additionalProperties: false
+      required:
+      - request_id
+      properties:
+        request_id:
+          type: string
+          format: uuid
+    ReviewHelpReply:
+      type: object
+      additionalProperties: false
+      required:
+      - request_id
+      - note
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        note:
+          type: string
+          minLength: 1
+          maxLength: 4000
+    ReviewHelpRecord:
+      type: object
+      additionalProperties: false
+      required:
+      - request_id
+      - complaint_id
+      - helper_id
+      - requested_version
+      - status
+      - access_active
+      - requested_at
+      - acknowledged_at
+      - responded_at
+      - note
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        complaint_id:
+          type: string
+          format: uuid
+        helper_id:
+          type: string
+        requested_version:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum:
+          - requested
+          - acknowledged
+          - completed
+          - superseded
+        access_active:
+          type: boolean
+        requested_at:
+          type: string
+          format: date-time
+        acknowledged_at:
+          type: string
+          format: date-time
+          nullable: true
+        responded_at:
+          type: string
+          format: date-time
+          nullable: true
+        note:
+          type: string
+          nullable: true
+          maxLength: 4000
+    ReviewHelpInbox:
+      type: object
+      additionalProperties: false
+      required:
+      - requests
+      - helpers
+      - shared_fields
+      properties:
+        requests:
+          type: array
+          maxItems: 25
+          items:
+            $ref: '#/components/schemas/ReviewHelpRecord'
+        helpers:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - helper_id
+            properties:
+              helper_id:
+                type: string
+        shared_fields:
+          type: array
+          items:
+            type: string
+    CitizenAgentProgress:
+      type: object
+      additionalProperties: false
+      required:
+      - runs
+      properties:
+        runs:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - agent_run_id
+            - current_status
+            - next_step
+            - submission_reference
+            - started_at
+            - updated_at
+            - steps
+            properties:
+              agent_run_id:
+                type: string
+                format: uuid
+              current_status:
+                $ref: '#/components/schemas/WorkflowStatus'
+              next_step:
+                type: string
+              submission_reference:
+                type: string
+                nullable: true
+              started_at:
+                type: string
+                format: date-time
+              updated_at:
+                type: string
+                format: date-time
+              steps:
+                type: array
+                maxItems: 5
+                items:
+                  type: object
+                  additionalProperties: false
+                  required:
+                  - step
+                  - status
+                  - timestamp
+                  properties:
+                    step:
+                      type: string
+                      enum:
+                      - identity
+                      - payment
+                      - requirements
+                      - submit
+                      - verify
+                    status:
+                      type: string
+                      enum:
+                      - completed
+                      - skipped
+                      - blocked
+                    timestamp:
+                      type: string
+                      format: date-time

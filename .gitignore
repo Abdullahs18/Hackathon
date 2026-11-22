@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+!.env.production.example
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.uv-cache/
+*.egg-info/
+backend/storage/
+*.db
+node_modules/
+voice-samples/
+voice-output/
