@@ -92,6 +92,15 @@ class Settings(BaseSettings):
                 "verify-full",
             }:
                 raise ValueError("Production requires PostgreSQL with SSL enabled")
+            if (
+                url.host
+                and (url.host.endswith(".pooler.supabase.com") or url.host.endswith(".supabase.co"))
+                and url.port == 6543
+            ):
+                raise ValueError(
+                    "Use the Supabase session pooler or direct connection on port 5432; "
+                    "startup requires session-level advisory locks"
+                )
             if self.storage_backend != "supabase":
                 raise ValueError("Production requires persistent private Supabase storage")
             for origin in self.cors_origins:

@@ -159,6 +159,36 @@ def test_cloud_database_url_normalization_and_local_storage(settings):
     assert make_store(settings).root == settings.evidence_dir.resolve()
 
 
+@pytest.mark.parametrize("host", ["aws-0-region.pooler.supabase.com", "db.project.supabase.co"])
+def test_production_rejects_supabase_transaction_pooler(host):
+    values = cloud_settings().model_dump()
+    values.update(
+        environment="production",
+        cors_origins=["https://web.example.test"],
+        database_url=f"postgresql://user:password@{host}:6543/db?sslmode=require",
+    )
+    with pytest.raises(ValidationError, match="session-level advisory locks"):
+        Settings(_env_file=None, **values)
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        "aws-0-region.pooler.supabase.com:5432",
+        "db.project.supabase.co:5432",
+        "db.example.test:6543",
+    ],
+)
+def test_production_accepts_session_connections_and_custom_postgres_ports(endpoint):
+    values = cloud_settings().model_dump()
+    values.update(
+        environment="production",
+        cors_origins=["https://web.example.test"],
+        database_url=f"postgresql://user:password@{endpoint}/db?sslmode=require",
+    )
+    assert Settings(_env_file=None, **values).environment == "production"
+
+
 def test_bootstrap_is_repeatable_preserves_passwords_and_migrations(app, settings):
     with Session(app.state.engine) as session:
         before = session.scalar(select(User.password_hash).where(User.user_id == "demo-admin"))

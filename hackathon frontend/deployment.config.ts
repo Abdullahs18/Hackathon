@@ -6,7 +6,7 @@ export function validateDeploymentEnv(env: Record<string, string | undefined>) {
     throw new Error('Deployment requires a public HTTPS API origin.');
   }
   for (const name of Object.keys(env)) {
-    if (name.startsWith('VITE_') && /SECRET|PASSWORD|SERVICE_KEY|GEMINI.*KEY|DATABASE_URL/i.test(name)) {
+    if (name.startsWith('VITE_') && /SECRET|PASSWORD|SERVICE_(?:ROLE_)?KEY|(?:GEMINI|GOOGLE).*KEY|DATABASE_URL/i.test(name)) {
       throw new Error('Server credentials must not use a VITE_ prefix.');
     }
   }

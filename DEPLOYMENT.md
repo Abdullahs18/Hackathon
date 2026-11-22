@@ -23,6 +23,8 @@ postgresql+psycopg://postgres.PROJECT:ENCODED_PASSWORD@POOLER_HOST:5432/postgres
 Use the exact host and username supplied by your project's Connect panel. Session pooling
 avoids IPv4/IPv6 connectivity surprises on free hosting. The application also disables
 automatic prepared statements and limits its production connection pool.
+Do not select Transaction pooler (port 6543): startup uses a session-level migration lock.
+Production configuration rejects that known incompatible Supabase endpoint before connecting.
 
 Create a Storage bucket named **dastak-private**:
 
