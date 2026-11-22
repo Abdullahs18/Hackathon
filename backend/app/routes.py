@@ -1,3 +1,4 @@
+import hashlib
 from collections import OrderedDict
 from threading import Lock
 from time import monotonic
@@ -67,7 +68,12 @@ def ready(request: Request, session: SessionDep):
     "/auth/login", response_model=LoginResult, tags=["Authentication"], operation_id="login"
 )
 def login(body: Login, request: Request, session: SessionDep):
-    request.app.state.login_limiter.check(request.client.host if request.client else "unknown")
+    origin = request.client.host if request.client else "unknown"
+    if request.app.state.settings.environment == "production":
+        # Without trusted proxy ranges, clients share an edge address. Bound each
+        # account separately so role switching cannot exhaust a shared login bucket.
+        origin = hashlib.sha256((origin + "\0" + body.user_id).encode()).hexdigest()
+    request.app.state.login_limiter.check(origin)
     user = session.get(User, body.user_id)
     encoded = user.password_hash if user else request.app.state.dummy_password_hash
     try:

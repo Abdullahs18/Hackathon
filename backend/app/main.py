@@ -14,13 +14,13 @@ from app.analysis_routes import router as analysis_router
 from app.api_key_routes import router as api_key_router
 from app.case_routes import router as case_router
 from app.case_voice_routes import router as case_voice_router
+from app.cloud_storage import make_store
 from app.config import Settings
 from app.contracts import implemented_openapi
 from app.db import make_engine
 from app.errors import install_error_handlers
 from app.evidence_body_limit import EvidenceBodyLimit
 from app.evidence_routes import router as evidence_router
-from app.evidence_storage import EvidenceStore
 from app.evidence_validation import EvidenceValidator
 from app.notification_routes import router as notification_router
 from app.review_help_routes import router as review_help_router
@@ -35,12 +35,21 @@ from app.voice.providers import GTTSSpeaker
 def create_app(settings: Settings | None = None) -> FastAPI:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     settings = settings or Settings()
-    engine = make_engine(settings.database_url)
+    engine = make_engine(
+        settings.database_url,
+        pool_size=settings.database_pool_size,
+        max_overflow=settings.database_max_overflow,
+    )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
-        yield
-        engine.dispose()
+        try:
+            yield
+        finally:
+            engine.dispose()
+            close_store = getattr(app.state.evidence_store, "close", None)
+            if close_store:
+                close_store()
 
     app = FastAPI(
         title="Dastak REST API — implemented backend",
@@ -55,7 +64,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.voice_provider_factory = provider_factory
     app.state.speech_translation_provider_factory = provider_factory
     app.state.voice_speaker_factory = GTTSSpeaker
-    app.state.evidence_store = EvidenceStore(settings.evidence_dir)
+    app.state.evidence_store = make_store(settings)
     app.state.evidence_validator = EvidenceValidator()
     app.add_middleware(EvidenceBodyLimit, max_bytes=settings.evidence_max_bytes)
     app.state.login_limiter = LoginLimiter(settings.login_attempts_per_minute)

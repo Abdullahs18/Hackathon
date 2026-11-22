@@ -1,9 +1,9 @@
 name: Backend checks
 on:
   push:
-    branches: [be, "integration/**"]
+    branches: [main, be, "integration/**"]
   pull_request:
-    paths: ["backend/**", "contracts/**", "compose.yaml", ".github/workflows/backend.yml"]
+    paths: ["backend/**", "contracts/**", "compose.yaml", "render.yaml", "deploy/**", ".github/workflows/backend.yml"]
 permissions:
   contents: read
 jobs:
@@ -62,3 +62,6 @@ jobs:
       - name: Verify bundled browser-audio decoder as application user
         working-directory: .
         run: docker run --rm dastak-backend:ci python -c "import os; assert os.getuid() == 10001; from app.voice.decoder_check import main; main()"
+      - name: Verify deployment startup, port, migrations and synthetic accounts
+        working-directory: .
+        run: docker run --rm dastak-backend:ci python -m app.deployment_check

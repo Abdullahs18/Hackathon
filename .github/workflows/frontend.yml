@@ -1,7 +1,7 @@
 name: Frontend integration
 on:
   push:
-    branches: ["integration/**"]
+    branches: [main, "integration/**"]
   pull_request:
     paths: ["hackathon frontend/**", "backend/**", "contracts/**", ".github/workflows/frontend.yml"]
 permissions:
@@ -27,7 +27,12 @@ jobs:
           cache-dependency-path: backend/requirements-dev.txt
       - run: python -m pip install -r ../backend/requirements-dev.txt
       - run: npm ci --no-audit --no-fund
+      - run: node --test deployment-tests/config.test.mjs
       - run: npm run build
+        env:
+          VITE_DEPLOYMENT: production
+          VITE_USE_MOCK: 'false'
+          VITE_API_BASE_URL: https://api.example.test
       - run: npm run lint
       - run: npx playwright install --with-deps chromium --only-shell
       - run: npm run test:e2e

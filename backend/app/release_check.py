@@ -22,11 +22,33 @@ ROLES = {
 }
 
 
-def check(client, password=None):
+def check(client, password=None, origin=None):
     results = []
     for path in ["/api/v1/health", "/api/v1/health/ready"]:
         response = client.get(path)
-        results.append({"check": path, "passed": response.status_code == 200})
+        results.append(
+            {
+                "check": path,
+                "passed": response.status_code == 200
+                and response.json() == {"status": "ok", "simulated": True},
+            }
+        )
+    if origin:
+        response = client.options(
+            "/api/v1/auth/login",
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        results.append(
+            {
+                "check": "frontend_cors",
+                "passed": response.status_code == 200
+                and response.headers.get("access-control-allow-origin") == origin,
+            }
+        )
     response = client.get("/openapi.json")
     spec = response.json() if response.status_code == 200 else {}
     actual = {
@@ -63,6 +85,7 @@ def check(client, password=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
+    parser.add_argument("--origin", help="Exact frontend origin to verify the login preflight.")
     parser.add_argument(
         "--roles", action="store_true", help="Use DASTAK_DEMO_PASSWORD from the environment."
     )
@@ -74,7 +97,7 @@ def main():
         with httpx.Client(
             base_url=args.base_url.rstrip("/"), timeout=15, follow_redirects=False
         ) as client:
-            report = check(client, password)
+            report = check(client, password, args.origin)
     except (httpx.HTTPError, ValueError):
         report = {"passed": False, "error": "API connection or response failed."}
     print(json.dumps(report))

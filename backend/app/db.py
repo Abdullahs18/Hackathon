@@ -19,12 +19,16 @@ def expected_database_heads() -> set[str]:
     return set(ScriptDirectory.from_config(config).get_heads())
 
 
-def make_engine(url: str) -> Engine:
+def make_engine(url: str, *, pool_size: int = 5, max_overflow: int = 10) -> Engine:
     kwargs = {
         "connect_args": (
-            {"check_same_thread": False} if url.startswith("sqlite") else {"connect_timeout": 5}
+            {"check_same_thread": False}
+            if url.startswith("sqlite")
+            else {"connect_timeout": 5, "prepare_threshold": None}
         )
     }
+    if not url.startswith("sqlite"):
+        kwargs.update(pool_size=pool_size, max_overflow=max_overflow)
     engine = create_engine(url, pool_pre_ping=True, **kwargs)
     if engine.dialect.name == "sqlite":
 

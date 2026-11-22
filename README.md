@@ -7,7 +7,12 @@ The product specification is [plan.md](plan.md). Shared API contracts live in
 [contracts/openapi.yaml](contracts/openapi.yaml) and [contracts/schemas.yaml](contracts/schemas.yaml).
 Backend work is committed to **`be`**. Do not commit this work to `main`.
 
-The combined application is available on **`integration/fe-be`**. See
+The tested combined application is available on **`integration/fe-be`**. The deployment
+candidate is on **`integration/deploy-render`**: see [DEPLOYMENT.md](DEPLOYMENT.md) for the
+Render Blueprint, Supabase database/private storage, environment setup and hosted acceptance
+checks. Merge the candidate into `main` after that acceptance run.
+
+See
 [INTEGRATION.md](INTEGRATION.md) for frontend startup, the real citizen/voice workflow,
 role checks and the verification boundaries. Integration retains the current backend contracts.
 
