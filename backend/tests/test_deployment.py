@@ -303,3 +303,19 @@ def test_release_check_verifies_exact_frontend_origin(client):
         next(row for row in rejected["checks"] if row["check"] == "frontend_cors")["passed"]
         is False
     )
+
+
+def test_production_login_has_account_and_shared_edge_limits(client, app):
+    app.state.settings.environment = "production"
+    app.state.login_limiter.limit = 1
+    app.state.login_edge_limiter.limit = 3
+
+    def attempt(user):
+        return client.post("/api/v1/auth/login", json={"user_id": user, "password": "incorrect"})
+
+    assert attempt("synthetic-unknown-a").status_code == 401
+    assert attempt("synthetic-unknown-a").status_code == 429
+    assert attempt("synthetic-unknown-b").status_code == 401
+    # Changing account identifiers cannot bypass the shared edge ceiling.
+    result = attempt("synthetic-unknown-c")
+    assert result.status_code == 429 and result.headers["Retry-After"] == "60"

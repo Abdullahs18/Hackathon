@@ -68,6 +68,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.evidence_validator = EvidenceValidator()
     app.add_middleware(EvidenceBodyLimit, max_bytes=settings.evidence_max_bytes)
     app.state.login_limiter = LoginLimiter(settings.login_attempts_per_minute)
+    app.state.login_edge_limiter = LoginLimiter(settings.login_attempts_per_minute * 6)
     app.state.dummy_password_hash = password_hasher.hash(str(uuid4()))
     app.add_middleware(
         CORSMiddleware,

@@ -116,7 +116,8 @@ Regular updates must still be tested against a staging database before productio
 Proxy headers are ignored by default. If your host supplies verified load-balancer IP/CIDR
 ranges, configure `DASTAK_TRUSTED_PROXY_IPS` as a JSON array of those ranges; wildcards
 are rejected. With no trusted ranges, production login throttling is scoped to the socket
-address plus account, rather than grouping every role behind one proxy into one bucket.
+address plus account, with an additional shared-edge ceiling of six times the per-account
+limit. This supports role switching while still bounding attempts across changing account IDs.
 Do not enable arbitrary forwarded-header trust to fix a login problem.
 
 ## 4. Verify the hosted application

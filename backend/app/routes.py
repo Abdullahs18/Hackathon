@@ -70,6 +70,7 @@ def ready(request: Request, session: SessionDep):
 def login(body: Login, request: Request, session: SessionDep):
     origin = request.client.host if request.client else "unknown"
     if request.app.state.settings.environment == "production":
+        request.app.state.login_edge_limiter.check(origin)
         # Without trusted proxy ranges, clients share an edge address. Bound each
         # account separately so role switching cannot exhaust a shared login bucket.
         origin = hashlib.sha256((origin + "\0" + body.user_id).encode()).hexdigest()
