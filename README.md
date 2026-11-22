@@ -1,189 +1,137 @@
-# Dastak backend
+# Dastak - Assisted Fraud Reporting
 
-Synthetic hackathon prototype for assisted reporting of suspected online financial fraud.
-All identities, payments, workspaces and eventual submissions are simulated. Use no real personal data.
+Dastak helps a citizen turn a text explanation or Urdu recording into a reviewed complaint
+form, approve its sharing and submission, and follow human review through to a recorded outcome.
 
-The product specification is [plan.md](plan.md). Shared API contracts live in
-[contracts/openapi.yaml](contracts/openapi.yaml) and [contracts/schemas.yaml](contracts/schemas.yaml).
-Backend work is committed to **`be`**. Do not commit this work to `main`.
+This is a hackathon prototype with **simulated reporting destinations and services**.
+It is not an official government portal. Use synthetic information only.
 
-The tested combined application is available on **`integration/fe-be`**. The deployment
-candidate is on **`integration/deploy-render`**: see [DEPLOYMENT.md](DEPLOYMENT.md) for the
-Render Blueprint, Supabase database/private storage, environment setup and hosted acceptance
-checks. Merge the candidate into `main` after that acceptance run.
+## What the application does
 
-See
-[INTEGRATION.md](INTEGRATION.md) for frontend startup, the real citizen/voice workflow,
-role checks and the verification boundaries. Integration retains the current backend contracts.
+- Gemini-assisted Urdu transcription, structured fact suggestions, classification and follow-up questions.
+- Citizen-reviewed form filling, prepared complaint download and saved Urdu spoken review.
+- Explicit, scoped sharing permissions and separate final submission authorization.
+- LangGraph filing steps with durable checkpoints, idempotent recovery and verified simulated receipts.
+- Citizen-requested Helper assistance with acknowledgment, replies and revocable access.
+- Admin assignment to a matching Officer; clarification requests, responses and recorded decisions.
+- Private evidence uploads with size/content validation and SHA-256 verification.
+- Role/workspace isolation, version checks, immutable audit events and in-app notifications.
 
-## Current increment
+## Deploy from the repository
 
-Implemented foundation: FastAPI app factory, PostgreSQL configuration, SQLAlchemy, Alembic migrations,
-two synthetic workspaces, six repeatable demo accounts, Argon2 password hashing, JWT login,
-current-account lookup, Admin user list/create, process liveness/database readiness, safe error
-bodies, process-local login throttling, CORS, request IDs, and append-only audit events for
-authentication and user creation. PostgreSQL rejects audit UPDATE, DELETE and TRUNCATE.
+Follow **[DEPLOYMENT.md](DEPLOYMENT.md)** for Render Free and Supabase Free.
+The root `render.yaml` defines the static frontend and Docker API. Supply credentials in the
+hosting dashboards; no application code edits are required for normal setup.
 
-Foundation endpoints:
+The deployment uses Supabase PostgreSQL and a private evidence bucket. Saved Urdu speech
+stays in PostgreSQL. Local Docker development retains its existing private file volume.
 
-| Method | Path | Access |
-| --- | --- | --- |
-| GET | `/api/v1/health` | Public process liveness |
-| GET | `/api/v1/health/ready` | Public DB/current-migration readiness |
-| POST | `/api/v1/auth/login` | Public JSON credentials, rate limited |
-| GET | `/api/v1/auth/me` | Active JWT account |
-| GET | `/api/v1/admin/users` | Admin JWT account |
-| POST | `/api/v1/admin/users` | Admin JWT account |
+Release workflow: verify the deployment candidate on `integration/deploy-render`, merge the
+verified code into `main`, then connect hosting to `main` and complete the hosted acceptance
+checks. CI readiness does not create hosting accounts or supply credentials automatically.
 
-Case drafts, helper grants, scoped consent and officer access are now implemented. Follow
-[backend/CASE_ACCESS.md](backend/CASE_ACCESS.md) for the additional 16 operations, migration 0002,
-retry/version semantics and local checks. [The iteration review](backend/ITERATION_2_REVIEW.md)
-records plan alignment, the confirmed live voice proof, fixes and remaining gaps.
+## Run locally
 
-All 64 current canonical operations are implemented and listed at `/docs`. Frontend integration
-and final MVP acceptance remain pending. Scoped application keys are implemented; use `X-API-Key`
-or a JWT, one at a time. Private evidence upload/list/metadata/download are implemented; see
-[backend/EVIDENCE.md](backend/EVIDENCE.md) for migration 0003, persistent storage and local checks.
-Readiness now also checks private storage writability. Saved-case Gemini text assessment and
-owner-only result recovery are implemented; see [backend/CASE_ANALYSIS.md](backend/CASE_ANALYSIS.md)
-for explicit provider permission, migration 0004 and local checks. The user confirmed this live
-Gemini API assessment works. Versioned routing, immutable history, route-aware readiness and
-unconfirmed structured review drafts are implemented in migration 0005; follow
-[backend/ROUTING.md](backend/ROUTING.md) for seeding and the Admin rule-change demo.
-[The pre-analysis audit](backend/ITERATION_3_REVIEW.md) records a reproduced PDF validation fix
-and the verification boundaries. The user confirmed the live routing checks passed.
-Explicit citizen approval, scoped simulated services, a fixed LangGraph workflow with durable SQL
-progress and idempotent simulated filing/confirmation are implemented in migration 0006. Follow
-[backend/SUBMISSION.md](backend/SUBMISSION.md) for the update commands, consent bodies, approval,
-submission, retries and withdrawal checks. [The submission review](backend/ITERATION_5_REVIEW.md)
-records the persistence and verification boundaries. Officer decisions, legal review outcomes,
-citizen clarification replies and persisted in-app notifications are implemented in migration 0007.
-Follow [backend/OFFICER_REVIEW.md](backend/OFFICER_REVIEW.md) for assignment, decision/reply headers,
-the transition table and withdrawal checks. Scoped, hashed, expiring/revocable API keys and safe
-Admin audit/agent inspection are implemented in migration 0008. Follow
-[backend/API_KEYS_AND_AUDIT.md](backend/API_KEYS_AND_AUDIT.md) for JWT-only self-issuance, scope
-boundaries, revocation and safe trace pagination. Persisted Urdu voice input, explicit citizen
-correction, spoken follow-ups and saved-fact review are implemented in migration 0009. Follow
-[backend/INTEGRATED_VOICE.md](backend/INTEGRATED_VOICE.md) for the seven new operations, recovery,
-frontend wiring and the one-command live-provider check. Frontend/mock-server stabilization remains pending.
-See [backend/ROADMAP.md](backend/ROADMAP.md).
+Requirements: Docker Desktop/Compose, Node.js 24 and npm. Python 3.12 is needed for backend
+development outside Docker and is useful for generating a local JWT secret.
 
-The latest foundation review, plan gaps, confirmed provider choices and Windows/Docker manual
-checks are recorded in [backend/PLAN_AUDIT.md](backend/PLAN_AUDIT.md).
-
-Gemini/gTTS provider adapters and the local Urdu proof command are now available.
-Follow [backend/VOICE_PROOF.md](backend/VOICE_PROOF.md) to configure your key locally, select a
-model available to your project, and test a synthetic recording. That original CLI remains
-available; the integrated complaint workflow is documented in INTEGRATED_VOICE.md.
-
-## Run with Docker Compose
-
-Requires Docker with Compose. For first-time setup, from repository root:
+From the repository root:
 
 ```powershell
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-Edit `.env`: use the generated JWT secret and set database/demo passwords. Use a URL-safe database
-password (letters, digits, hyphens or underscores), because Compose places it into a connection URL.
-Never commit `.env`. Then:
+Set the generated JWT secret, a URL-safe PostgreSQL password and a demo password of at least
+12 characters in `.env`. Set your Gemini key and an available model to use AI features.
+Keep existing `.env` values when updating an established installation.
 
 ```powershell
 docker compose up --build -d
 docker compose run --rm api python -m app.seed
-docker compose logs api
+docker compose exec api python -m app.release_check
 ```
 
-Compose waits for PostgreSQL, applies migrations once through the `migrate` service, and starts
-the API on `http://localhost:8000`. Readiness is `http://localhost:8000/api/v1/health/ready`.
-Seeding is explicit and non-destructive. Rerunning it does not reset existing passwords or erase cases.
-Database data persists in the named `postgres_data` volume. Ordinary `docker compose down` preserves it.
-Run one API worker for this prototype: login throttling is in memory and is not shared across workers.
-The server ignores forwarded client IP headers; configure a trusted proxy deliberately if deployed.
+Compose waits for PostgreSQL and applies migrations before starting the API.
+Seeding preserves existing accounts and passwords. Data persists in named database/evidence
+volumes; do not remove those volumes as an update procedure.
 
-## Run locally on Windows
-
-Requires Python 3.12 and PostgreSQL 16. Create an empty `dastak` database and application user first.
-From repository root:
+In a second terminal:
 
 ```powershell
-cd backend
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements-dev.txt
-Copy-Item .env.example .env
+Set-Location "hackathon frontend"
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+npm ci
+npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-Edit `backend/.env` with the actual database URL, random JWT secret and synthetic demo password.
-Root `.env` configures Compose; `backend/.env` configures a backend process started locally.
+Open `http://127.0.0.1:5173/login`. The API is at `http://localhost:8000`, its implemented
+OpenAPI documentation at `/docs`, and readiness at `/api/v1/health/ready`.
+For local CORS configuration, allow both `http://localhost:5173` and `http://127.0.0.1:5173`.
+Production uses exact HTTPS origins instead.
 
-```powershell
-alembic upgrade head
-python -m app.seed
-uvicorn app.main:create_app --factory --reload --no-access-log --no-proxy-headers
-```
+## Synthetic accounts
 
-The app never creates tables on import or startup. Apply Alembic migrations explicitly.
-Runtime secrets have no usable defaults; startup fails if required settings are missing.
+Freshly seeded accounts use the password you supplied in `DASTAK_DEMO_PASSWORD`.
+Rerunning the seed does not reset existing passwords.
 
-## Synthetic accounts and login
-
-All freshly seeded accounts use the password supplied through `DASTAK_DEMO_PASSWORD`.
-
-| User ID | Role | Workspace |
+| Account | Role | Scope |
 | --- | --- | --- |
-| `demo-citizen-1` | Citizen | None |
-| `demo-citizen-2` | Citizen | None |
-| `demo-helper` | Helper | None |
-| `demo-officer-financial` | Officer | Mock Financial Fraud Intake |
-| `demo-officer-digital` | Officer | Mock Digital Safety Intake |
-| `demo-admin` | Admin | None |
+| demo-citizen-1 | Citizen | Own complaints |
+| demo-citizen-2 | Citizen | Own complaints |
+| demo-helper | Helper | Citizen-granted fields |
+| demo-admin | Admin | Governance, assignment metadata and audit |
+| demo-officer-financial | Officer | Assigned financial workspace cases |
+| demo-officer-digital | Officer | Assigned digital-safety workspace cases |
+
+## Verification
+
+GitHub Actions runs backend checks against SQLite and PostgreSQL, contract/migration checks,
+frontend deployment configuration tests, production builds and browser workflows. Docker checks
+exercise non-root storage, the audio decoder and the actual migration/seed/startup command.
+
+From an activated Python 3.12 backend development environment:
 
 ```powershell
-$credentials = @{user_id='demo-admin'; password='YOUR_SYNTHETIC_DEMO_PASSWORD'} | ConvertTo-Json
-$login = Invoke-RestMethod http://localhost:8000/api/v1/auth/login -Method Post -ContentType application/json -Body $credentials
-$headers = @{Authorization="Bearer $($login.access_token)"}
-Invoke-RestMethod http://localhost:8000/api/v1/auth/me -Headers $headers
-```
-
-Login returns only `access_token` as agreed in the contract. Tokens expire after 30 minutes by
-default and require valid issuer, audience, subject, issuance, not-before and expiry claims.
-Roles, workspace and account activation are loaded from the database on each protected request.
-There is no refresh-token or logout-revocation endpoint in this increment.
-
-## Tests and dependencies
-
-From `backend/` with the development environment active:
-
-```powershell
+python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ruff check app migrations tests
 ruff format --check app migrations tests
 ```
 
-The default suite creates isolated SQLite databases, applies the real migrations and checks seed
-repeatability, JWT failure modes, role restrictions, safe errors, audit protection, schema drift,
-and actual response conformance against the canonical OpenAPI 3.0.3 contract.
-SQLite is a local test aid; PostgreSQL remains the application database.
+PostgreSQL tests use `TEST_DATABASE_URL` and apply/downgrade migrations for each test.
+Use a dedicated, disposable test database; never an application database containing wanted data.
 
-For PostgreSQL verification, set `TEST_DATABASE_URL` to a **dedicated disposable empty test database**
-before running the suite. Each test applies and downgrades the migration. Never point this variable
-at the application or any database whose data you want to keep.
-
-GitHub Actions on `be` runs the suite against both SQLite and PostgreSQL 16, validates Compose,
-and builds the container. Local checks do not prove the container or PostgreSQL path works;
-consult the workflow result before claiming those checks passed.
-
-`backend/uv.lock` pins runtime and development dependencies across platforms. Pip users can use
-the generated pinned requirements files. To update deliberately with uv:
+From the frontend directory:
 
 ```powershell
-uv lock --project backend
-uv export --project backend --locked --no-dev --no-hashes --no-emit-project --output-file backend/requirements.txt
-uv export --project backend --locked --no-hashes --no-emit-project --output-file backend/requirements-dev.txt
+node --test deployment-tests/config.test.mjs
+npm run build
+npm run lint
+npm run test:e2e
 ```
 
-Make API shape changes in the shared contracts first and include implementation and regression
-updates in the same commit. Frontend can continue using the full canonical contract with a mock
-server; a mock-server tool/version and live mock validation have not yet been selected or verified.
+The browser suite starts isolated API/storage fixtures and requires Playwright Chromium.
+See [DEMO_AND_EVALUATION.md](DEMO_AND_EVALUATION.md) for the full-role demo and the 36-case
+Gemini evaluation. AI calls require explicit permission and an available provider quota.
+
+## Architecture and documentation
+
+React/Vite frontend; FastAPI/Pydantic API; SQLAlchemy/Alembic/PostgreSQL persistence;
+Gemini interpretation; gTTS spoken review; LangGraph approved-workflow coordination.
+Run one backend worker initially: process-local guards and login limits are not distributed.
+
+| Topic | Guide |
+| --- | --- |
+| Cloud deployment, persistence, backups and rollback | [DEPLOYMENT.md](DEPLOYMENT.md) |
+| Demo and AI evaluation | [DEMO_AND_EVALUATION.md](DEMO_AND_EVALUATION.md) |
+| Frontend/backend integration | [INTEGRATION.md](INTEGRATION.md) |
+| Voice workflow | [backend/INTEGRATED_VOICE.md](backend/INTEGRATED_VOICE.md) |
+| Evidence storage and access | [backend/EVIDENCE.md](backend/EVIDENCE.md) |
+| Approved submission and recovery | [backend/SUBMISSION.md](backend/SUBMISSION.md) |
+| Officer review | [backend/OFFICER_REVIEW.md](backend/OFFICER_REVIEW.md) |
+| Scoped API keys and audit | [backend/API_KEYS_AND_AUDIT.md](backend/API_KEYS_AND_AUDIT.md) |
+| Canonical API contracts | [contracts/openapi.yaml](contracts/openapi.yaml) |
+
+`plan.md` remains the project plan. The `be`, `frontend` and integration branches retain the
+development history; `main` is the release branch once the verified deployment pass is merged.

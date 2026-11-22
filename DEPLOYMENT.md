@@ -47,7 +47,7 @@ the private bucket; raw voice input is not newly retained by this deployment cha
 ## 2. Create the Render Blueprint
 
 Connect Render to this GitHub repository and create a **Blueprint**, selecting
-`integration/deploy-render` for the candidate deployment. Render reads `render.yaml`.
+`main` for the verified release (or `integration/deploy-render` for a candidate preview). Render reads `render.yaml`.
 No paid disk, paid pre-deploy hook or paid database is required.
 
 The Blueprint creates:
@@ -177,9 +177,10 @@ The first hosted deployment creates a separate database. Transferring existing c
 a coordinated database export plus evidence-object transfer with original keys/hashes;
 do not switch storage backends for an existing populated database without that transfer.
 
-After the hosted acceptance run passes, merge the deployment candidate into `main`, switch
-the Render Blueprint/services to `main`, and verify the resulting release. Until then,
-`main` remains the previous version and the candidate stays isolated.
+Merge the deployment candidate into `main` after repository CI passes. Connect the
+Render Blueprint/services to `main`, configure the hosting accounts, then complete the
+hosted acceptance run above before sharing the deployment for the presentation. A green
+repository check does not replace verification of the actual cloud credentials and URLs.
 
 ## Troubleshooting
 
