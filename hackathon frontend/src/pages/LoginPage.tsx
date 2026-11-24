@@ -1,8 +1,9 @@
 ﻿import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { m } from 'motion/react';
 import {
   AlertCircle,
+  ArrowLeft,
   ArrowRight,
   CheckCircle2,
   FlaskConical,
@@ -33,11 +34,13 @@ import {
   USE_MOCK,
 } from '@/lib/apiClient';
 import { DEMO_ACCOUNTS } from '@/lib/workspaceMeta';
+import { SecurityCursor } from '@/pages/landing/SecurityCursor';
 
 export function LoginPage() {
-  const { login, authNotice, clearAuthNotice } = useAuth();
+  const { user, login, authNotice, clearAuthNotice } = useAuth();
   const { t, lang } = useI18n();
   const navigate = useNavigate();
+  const rtl = lang === 'ur';
 
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
@@ -72,28 +75,51 @@ export function LoginPage() {
 
   return (
     <div className="civic-canvas min-h-screen bg-background text-foreground">
-      <div className="sticky top-0 z-40">
-        <PrototypeBanner />
-      </div>
+      <SecurityCursor />
+      <PrototypeBanner />
 
-      <main className="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-8 lg:py-10">
-        <div className="mb-5 flex items-center justify-between gap-3 sm:mb-7">
-          <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md ring-1 ring-white/20">
-              <ShieldCheck className="h-6 w-6" aria-hidden />
+      <header className="sticky top-0 z-30 border-b border-border/80 bg-background/90 backdrop-blur-xl">
+        <div className="mx-auto flex h-18 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
+          <Link
+            to="/"
+            aria-label={rtl ? 'دستک ہوم' : 'Dastak home'}
+            className="group flex min-w-0 items-center gap-3 rounded-xl focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md ring-1 ring-white/20 transition-transform motion-safe:group-hover:-rotate-2">
+              <ShieldCheck className="h-6 w-6 shrink-0" aria-hidden />
             </span>
-            <div className="leading-tight">
-              <h1 className="text-2xl font-bold tracking-tight">
-                {lang === 'ur' ? 'دستک' : 'Dastak'}
-              </h1>
-              <p className="text-xs text-muted-foreground">{t('app.taglineLogin')}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+            <span className="min-w-0 leading-tight">
+              <span className="block text-2xl font-bold tracking-tight">
+                {rtl ? 'دستک' : 'Dastak'}
+              </span>
+              <span className="hidden max-w-48 text-xs text-muted-foreground xl:block">
+                {t('app.taglineLogin')}
+              </span>
+            </span>
+          </Link>
+
+          <div className="ms-auto flex items-center gap-2">
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
+              <Link to="/">
+                <ArrowLeft className="h-4 w-4 shrink-0 rtl:rotate-180" aria-hidden />
+                <span>{rtl ? 'ہوم پیج' : 'Back to Home'}</span>
+              </Link>
+            </Button>
+            {user && (
+              <Button asChild size="sm" className="hidden gap-1.5 sm:inline-flex">
+                <Link to={getHomePathForRole(user.role)}>
+                  <span>{rtl ? 'ڈیش بورڈ کھولیں' : 'Open Workspace'}</span>
+                  <ArrowRight className="h-4 w-4 shrink-0 rtl:rotate-180" aria-hidden />
+                </Link>
+              </Button>
+            )}
             <LanguageSwitcher idSuffix="login" />
             <ThemeToggle />
           </div>
         </div>
+      </header>
+
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
 
         <FadeSlide className="grid gap-6 lg:grid-cols-12 lg:gap-8">
           {/* Main citizen sign-in */}

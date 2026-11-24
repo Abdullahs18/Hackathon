@@ -3,13 +3,17 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { DropdownMenu } from 'radix-ui';
 import { m } from 'motion/react';
 import {
+  ArrowLeft,
   Building2,
   ChevronDown,
   FlaskConical,
+  Home,
+  LogIn,
   LogOut,
   ShieldCheck,
   WifiOff,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { getHomePathForRole, useAuth } from '@/context/AuthContext';
 import { useDraftSync } from '@/context/DraftSyncContext';
 import { USE_MOCK } from '@/lib/apiClient';
@@ -111,6 +115,24 @@ function UserMenu() {
           <DropdownMenu.Separator className="my-1.5 h-px bg-border" />
           <DropdownMenu.Item
             onSelect={() => {
+              navigate('/');
+            }}
+            className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-[highlighted]:bg-muted"
+          >
+            <Home className="h-4 w-4" aria-hidden />
+            {lang === 'ur' ? 'ہوم پیج' : 'Landing Page'}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => {
+              navigate('/login');
+            }}
+            className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-[highlighted]:bg-muted"
+          >
+            <LogIn className="h-4 w-4 rtl:rotate-180" aria-hidden />
+            {lang === 'ur' ? 'لاگ اِن پیج پر واپس' : 'Back to Login Page'}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => {
               logout();
               navigate('/login');
             }}
@@ -205,6 +227,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="hidden md:block md:ms-3">{renderNav('desktop')}</div>
 
             <div className="ms-auto flex w-full min-w-0 flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
+              <Button asChild variant="outline" size="sm" className="gap-1.5">
+                <Link to="/login">
+                  <ArrowLeft className="h-3.5 w-3.5 shrink-0 rtl:rotate-180" aria-hidden />
+                  <span>{lang === 'ur' ? 'لاگ اِن پیج' : 'Back to Login'}</span>
+                </Link>
+              </Button>
               {user && <ConnectionStatusPill />}
               <LanguageSwitcher />
               <ThemeToggle />

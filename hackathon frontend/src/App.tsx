@@ -25,6 +25,7 @@ import {
 import { DraftSyncProvider } from '@/context/DraftSyncContext';
 import { useI18n } from '@/i18n/I18nContext';
 import { LoginPage } from '@/pages/LoginPage';
+import { PublicHomePage } from '@/pages/PublicHomePage';
 import type { Role } from '@/types/dastak';
 
 const CitizenDashboard = lazy(() =>
@@ -144,19 +145,6 @@ function ShellLayout() {
   );
 }
 
-function HomeRedirect() {
-  const { user, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
-  }
-  if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={getHomePathForRole(user.role)} replace />;
-}
-
 export function App() {
   return (
     <BrowserRouter>
@@ -164,7 +152,7 @@ export function App() {
         <DraftSyncProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<HomeRedirect />} />
+            <Route path="/" element={<PublicHomePage />} />
 
             <Route element={<ShellLayout />}>
 
@@ -249,7 +237,7 @@ export function App() {
             />
             </Route>
 
-            <Route path="*" element={<HomeRedirect />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </DraftSyncProvider>
       </AuthProvider>
